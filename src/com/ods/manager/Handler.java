@@ -20,12 +20,14 @@ import com.ods.message.SysHeadIn;
 import com.ods.message.TxnMessager;
 import com.ods.service.PackEsbHead;
 import com.ods.transaction.DepositTrans.Body.ReqBody;
+import com.ods.ws.TxnBody;
 
 public class Handler {
 	private static Logger logger = OdsLog.getTxnLogger("Handler");
 	
-	public static EsbMessageOut QueryOdsData(SysHeadIn sysHeadIn, AppHeadIn appHeadIn, LocalHead localHead, ReqBody reqBody )  {
-		
+	//public static EsbMessageOut QueryOdsData(SysHeadIn sysHeadIn, AppHeadIn appHeadIn, LocalHead localHead, ReqBody reqBody )  {
+	public static EsbMessageOut QueryOdsData( SysHeadIn sysHeadIn, AppHeadIn appHeadIn, LocalHead localHead, TxnBody reqBody )  {
+				
 		int timeOut = 60; // 超时时间, 默认60s
 		
 		String serialNo = SerialNo.getNextSerialNo();
@@ -110,7 +112,8 @@ public class Handler {
 			// 检查交易代号
 
 			// 放入交易队列
-			QueueManager.SysQueueAdd(Constant.TxnQueue, txnMessager);
+			//QueueManager.SysQueueAdd(Constant.TxnQueue, txnMessager);
+			QueueManager.SysMoveMsgToStartQueue(txnMessager);
 			boolean timeOutFlg = true;
 			try {
 				Thread.sleep(timeOut);

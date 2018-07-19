@@ -16,11 +16,12 @@ public class DbDataLine {
 	long rows =0 ;       // 行号
 	int columnCount = 0 ; // 本行中字段的数量, 对应实际字段个数, 如果存在字段,计数从1开始, 0表示没有字段 
 //	private Map<Integer, String> seqNameLine   = new HashMap<Integer, String>();  // <列号, 列名>
-	private Map<Integer, Object> seqValueLine  = new HashMap<Integer, Object>();  // <列号, 列对象>
-	private Map<String, Object> valueLine      = new HashMap<String, Object>();   // <列名, 数据值>
 //	private Map<String, Object> columnTypeLine = new HashMap<String, Object>();   // <列名, 列类型>
-	private StringBuffer keyValue = new StringBuffer();   //本行数据的keyValue
+	//private StringBuffer keyValue = new StringBuffer();   //本行数据的keyValue
 	//private HashMap<String, DataColumn> dataLine    = null;  // <列名, 列类型>
+	//private ArrayList<Object> listValueLine = new ArrayList<Object>();
+	private Map<Integer, Object> seqValueLine  = new HashMap<Integer, Object>();  // <列号, 列对象>
+	private Map<String, Object>  valueLine     = new HashMap<String, Object>();   // <列名, 数据值>
 	
 	public DbDataLine() {
 		
@@ -39,19 +40,18 @@ public class DbDataLine {
 	 * 对本行数据生成 keyValue, 并返回生成的 keyValue
 	 * @param keyDefine
 	 */
-	public String generateKeyValue(String keyDefine) {
-		// 初始化完成, 生成本行对应KeyValue
-		keyValue.setLength(0);
-		for (String key : keyDefine.split(",")) {
-			String name = key.split(":")[0];
-			int length = new Integer(key.split(":")[1]); // 按照指定长度截取
-//			String value = (this.getColumnType(name) == null ? "": this.getColumnType(name).toString());
-			String value = (this.valueLine.get(key) == null ? "": this.valueLine.get(key).toString());
-			value = String.format("%-"+ length +"s", value).substring(0, length);  //按照定义长度补位,数据超长则截取
-			keyValue.append(value);
-		}
-		return keyValue.toString();
-	}
+//	
+//	public String generateKeyValue(String keyDefine) {
+//		// 初始化完成, 生成本行对应KeyValue
+//		keyValue.setLength(0);
+//		for (String key : keyDefine.split(",")) {
+//			int length = new Integer(key.split(":")[1]); // 按照指定长度截取
+//			String value = (this.valueLine.get(key) == null ? "": this.valueLine.get(key).toString());
+//			value = String.format("%-"+ length +"s", value).substring(0, length);  //按照定义长度补位,数据超长则截取
+//			keyValue.append(value);
+//		}
+//		return keyValue.toString();
+//	}
 	
 
 	/**
@@ -67,16 +67,15 @@ public class DbDataLine {
 	public void init(ResultSet resultSet, String keyDefine) throws SQLException {
 		rows =0 ;       
 		columnCount = 0 ; 
-//		seqNameLine.clear();
 		seqValueLine.clear();    
 		valueLine.clear();       
-//		columnTypeLine.clear();  
-		keyValue.setLength(0);   
 		
 		this.addByResultSet(resultSet);   // 根据ResultSet初始化一行数据
-		if(keyDefine != null){
-			this.generateKeyValue(keyDefine); //生成 keyValue
-		}
+// 20180718
+//		keyValue.setLength(0);  // 20180718 
+//		if(keyDefine != null){
+//			this.generateKeyValue(keyDefine); //生成 keyValue
+//		}
 	}
 	
 	
@@ -257,6 +256,8 @@ public class DbDataLine {
 //		this.dataLine = dataLine;
 //	}
 
+/*
+ *  20180718
 	public StringBuffer getKeyValue() {
 		return keyValue;
 	}
@@ -264,5 +265,5 @@ public class DbDataLine {
 	public void setKeyValue(StringBuffer keyValue) {
 		this.keyValue = keyValue;
 	}
-
+*/
 }

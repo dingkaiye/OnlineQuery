@@ -9,19 +9,24 @@ public class Constant {
 	
 	
 	// QUEUEName
-	public static final String QueueList = "QueueList";  // 系统中队列清单
 	
-	public static final String HandlerQuene = "HandlerQuene"; // 
-	public static final String UnpackQueue = "UnpackQueue";   // 待解包队列
-	public static final String PackQueue = "PackQueue";       // 待组包队列
+	// 指定系统起始队列配置项在 SysConfig.properties 文件中 的名称 
+	public static final String SystemStartQueueCfg = "SystemStartQueue" ; 
+	
+	// 系统中队列清单
+	public static final String QueueList = "QueueList";   
+	
+//	public static final String HandlerQuene = "HandlerQuene"; // 
+//	public static final String UnpackQueue = "UnpackQueue";   // 待解包队列
+//	public static final String PackQueue = "PackQueue";       // 待组包队列
 	public static final String TxnQueue = "TxnQueue";         // 待处理交易队列
 	public static final String ManagerQuene = "ManagerQuene"; // 管理者队列 
 	public static final String FailQueue = "FailQueue";       // 失败消息队列
 	public static final String SuccessQueue = "SuccessQueue";       // 成功消息队列
 	
-	/** ESB组包配置 */ 
-	public static final String EsbReqPack = "EsbReqPack";
-	public static final String EsbRspPack = "EsbRspPack";
+//	/** ESB组包配置 */ 
+//	public static final String EsbReqPack = "EsbReqPack";
+//	public static final String EsbRspPack = "EsbRspPack";
 	
 	/**EsbReqBody 名称*/
 	public static final String EsbReqBody = "ReqBody";

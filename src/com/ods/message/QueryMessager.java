@@ -1,5 +1,6 @@
 package com.ods.message;
 
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,36 +32,17 @@ public class QueryMessager {
 		this.recordNum = resultList.size();
 	}
 	
-//	public QueryMessager(ArrayList<DbDataLine> resultHead, ArrayList<DbDataLine> resultList, int totalNum){
-//		this.result = true;  //成功
-//		this.resultList = resultList;
-//		this.resultHead = new HashMap<String, Object >();
-//		this.totalNum = totalNum;
-//		this.recordNum = resultList.size();
-//		
-//		//将 ArrayList<DbDataLine> 类型的 resultHead 转换为 Map<String, Object>
-//		if (null != resultHead && resultHead.size() != 0) {
-//			// 此处为初始化resultHead, 因此此处仅取 resultHead 的 第一行
-//			DbDataLine valueLine = resultHead.get(0); 
-//			int columnCount = valueLine.getColumnCount(); // 字段数
-//			for (int i = 1; i <= columnCount; i++) {
-//				String Name = valueLine.getColumnNameBySeq(i);
-//				Object data = valueLine.get(i);
-//				this.resultHead.put(Name, data);
-//			}
-//		}
-//	}
 	/**
-	 * 提供使用 DbDataLine 类型初始化 resultHead 的构造方法
-	 * @param resultHead
-	 * @param resultList
-	 * @param totalNum
-	 */
+	* 提供使用 DbDataLine 类型初始化 resultHead 的构造方法
+	* @param resultHead
+	* @param resultList
+	* @param totalNum
+	*/
 	public QueryMessager(DbDataLine resultHead, ArrayList<DbDataLine> resultList){
 		this.result = true;  //成功
 		this.resultList = resultList;
 		this.resultHead = new HashMap<String, Object>();
-		this.recordNum = resultList.size();
+		this.recordNum  = resultList.size();
 		
 		//将 ArrayList<DbDataLine> 类型的 resultHead 转换为 Map<String, Object>
 		if (null != resultHead && resultHead.getColumnCount() != 0) {
@@ -74,6 +56,8 @@ public class QueryMessager {
 		}
 	}
 
+
+	
 	/**
 	 * 构造含有错误信息的返回
 	 */

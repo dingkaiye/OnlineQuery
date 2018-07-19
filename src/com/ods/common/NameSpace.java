@@ -7,7 +7,7 @@ package com.ods.common;
  */
 public class NameSpace {  
 
-	public static final String ODS_URL  = "http://192.168.10.20:8090/ODS"  ;
-    public static final String ODS_WSDL = "http://192.168.10.20:8090/ODS/wsdl" ;
+	public static final String ODS_URL  = "http://127.0.0.1:8090/ODS"  ;
+    public static final String ODS_WSDL = "http://127.0.0.1:8090/ODS/wsdl" ;
     
 } 

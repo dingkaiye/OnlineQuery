@@ -27,7 +27,10 @@ public class QueueManager {
 	
 	//系统队列 Map
 	private static Hashtable<String, BlockingQueue<TxnMessager>> sysQueueMap = new Hashtable<String, BlockingQueue<TxnMessager>>() ;
-		
+	
+	// 系统起始队列, Handler 使用, 接收ESB消息, 开始交易处理时使用 
+	private static String systemStartQueue = null;
+	
 	protected static boolean QueueInit() {
 		// 读取队列配置参数
 		Properties QueueConfig = null;
@@ -38,10 +41,30 @@ public class QueueManager {
 			e.printStackTrace();
 			return false;
 		}
-
+		
+		
+		
+		
 		String QueueList = QueueConfig.getProperty(Constant.QueueList).toString();
-
+		systemStartQueue = QueueConfig.getProperty(Constant.SystemStartQueueCfg) ;
 		String[] Queues = QueueList.split(",");
+		
+		// 检查初始队列是否存在, 是否指定
+		if(systemStartQueue == null || "".equals(systemStartQueue.trim()) ) {
+			thisLogger.info("配置存在错误," + Constant.SystemStartQueueCfg + " 为空或未指定");
+		}
+		boolean isContain = false ;
+		for(String QueueName: Queues) {
+			if(systemStartQueue.equals(QueueName)) {
+				isContain = true ; 
+				break;
+			}
+		}
+		if(isContain == false) {
+			thisLogger.info("配置存在错误," + Constant.SystemStartQueueCfg + ":" + systemStartQueue + "不包含于" + Constant.SystemStartQueueCfg );
+		}
+		
+		
 		// 读取配置初始化队列
 		for (int i = 0; i < Queues.length; i++) {
 			String QueueName = Queues[i];
@@ -80,16 +103,34 @@ public class QueueManager {
 	 * @param QueueName
 	 * @param txnMessager
 	 */
+
+	
 	public static boolean SysQueueAdd(String QueueName, TxnMessager txnMessager) {
-		BlockingQueue<TxnMessager> Queue = SysQueueGet(QueueName);
-		String txnSerialNo = txnMessager.getSerialNo() ;  // 获取系统流水号 
-		//记录日志
-		//thisLogger.info( txnSerialNo + "加入到队列" + QueueName + "开始");
-		boolean result = Queue.add(txnMessager);
-		thisLogger.info( txnSerialNo + "加入到队列" + QueueName + "完成,操作结果:" + result);
+		boolean result = false;
+		String txnSerialNo = null;
+		try {
+			BlockingQueue<TxnMessager> Queue = SysQueueGet(QueueName);
+			txnSerialNo = txnMessager.getSerialNo(); // 获取系统流水号
+			// 记录日志
+			// thisLogger.info( txnSerialNo + "加入到队列" + QueueName + "开始");
+			result = Queue.add(txnMessager);
+			thisLogger.info(txnSerialNo + "加入到队列" + QueueName + "完成,操作结果:" + result);
+		} catch (Exception e) {
+			result = false ;
+			thisLogger.info(txnSerialNo + "加入到队列" + QueueName + "失败,操作结果:" + result);
+		}
 		return result;
 	}
 	
+	/**
+	 * 转入系统开始队列 
+	 * @param txnMessager
+	 * @return
+	 */
+	public static boolean SysMoveMsgToStartQueue(TxnMessager txnMessager) {
+		boolean result = SysQueueAdd(systemStartQueue, txnMessager) ;
+		return result ;
+	}
 		
 	/**
 	 * 获取并移除此队列的头部，在指定的等待时间前等待可用的元素（如果有必要）。
@@ -185,16 +226,19 @@ public class QueueManager {
 	/**
 	 * 转入失败队列
 	 */
-	public static void moveToFailQueue(TxnMessager txnMessager) {
-		txnMessager.setMsgStatus(false);
-		QueueManager.SysQueueAdd(Constant.FailQueue, txnMessager);			//转入失败队列
+	public static void moveToFailQueue(TxnMessager txnMessager, String failQueue) {
+		//txnMessager.setMsgStatus(false);
+//		QueueManager.SysQueueAdd(Constant.FailQueue, txnMessager);			//转入失败队列
+		QueueManager.SysQueueAdd(failQueue, txnMessager);			//转入失败队列
 	}
 
 
-	public static void moveToFailQueue(TxnMessager txnMessager, String msg) {
-		txnMessager.setMsgStatus(false);
+	public static void moveToFailQueue(TxnMessager txnMessager, String failQueue, String msg) {
+		// 移动到失败消息队列, 不再设置为无效 , 以便将信息返回给调用端 20180719
+		// txnMessager.setMsgStatus(false);
 		txnMessager.setcurrent("fail", msg);
-		QueueManager.SysQueueAdd(Constant.FailQueue, txnMessager);	
+//		QueueManager.SysQueueAdd(Constant.FailQueue, txnMessager);	
+		QueueManager.SysQueueAdd(failQueue, txnMessager);	
 	}
 	
 

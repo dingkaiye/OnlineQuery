@@ -5,6 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
@@ -17,36 +20,7 @@ import com.ods.message.QueryResult;
  */
 public class DbQuery {
 	private static Logger logger = OdsLog.getTxnLogger("DbQuery");
-	
-//	/**
-//	 * 匿名参数查询 , 仅使用SQL查询且不需要总记录数时使用
-//	 * @param sql
-//	 * @param params
-//	 * @return ArrayList
-//	 * @throws SQLException 
-//	 * 使用匿名参数查询数据库,若没有参数, params 赋值 null 
-//	 */
-//	public static QueryResult excuteQuery(String sql) throws SQLException {
-//		int TotleRows = -1;
-//		return  excuteQuery(sql, null, TotleRows);
-//	}
-	
-//	/**
-//	 * 使用匿名参数查询数据库,若没有参数, params 赋值  null 
-//	 * 不需要获取总记录数时, 可使用此查询, 屏蔽 TotleRows
-//	 * @param sql        SQL语句
-//	 * @param params     参数列表
-//	 * @param TotleRows  用于记录本次查询数据的总记录数
-//	 * @return ArrayList 本次查询数据的记录
-//	 * @throws SQLException
-//	 */
-//	
-//	public static QueryResult excuteQuery(String sql, Object[] params) throws SQLException  {
-//		int TotleRows = -1;
-//		return excuteQuery(sql, params, TotleRows);
-//	}
-	
-	
+		
 	/**
 	 * 匿名参数查询 , 仅使用SQL查询需要总记录数时使用
 	 * @param sql
@@ -74,7 +48,12 @@ public class DbQuery {
 		Connection conn = null;
 		int totleRows = 0;
 		
-		logger.info("查询开始,SQL[" + sql + "] 入参[" + params + "] " );
+		if (logger.isInfoEnabled()) {
+			logger.info("查询开始,SQL[" + sql + "] 入参[" + params + "] " );
+			for(Object ob : params) {
+				logger.info(" 入参[" + ob.toString() + "]");
+			}
+		}
 		
 		conn = DbPool.getConnection();		//获取数据库连接
 		queryStatement = conn.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
@@ -86,22 +65,30 @@ public class DbQuery {
 		}
 		
 		ArrayList<DbDataLine> resultList = new ArrayList<DbDataLine>();
-		queryResult = queryStatement.executeQuery();
-		
-		queryResult.last();
-		totleRows = queryResult.getRow();
-		logger.debug(totleRows);
-		queryResult.beforeFirst();
-		
-		while (queryResult.next()) {
-			DbDataLine dbDataLine = new DbDataLine(queryResult);
-			resultList.add(dbDataLine);
+		try {
+			queryResult = queryStatement.executeQuery();
+			queryResult.last();
+			totleRows = queryResult.getRow();
+			logger.debug(totleRows);
+			queryResult.beforeFirst();
+			
+			while (queryResult.next()) {
+				DbDataLine dbDataLine = new DbDataLine(queryResult);
+				resultList.add(dbDataLine);
+			}
+		} catch (Exception e) {
+			logger.error("excuteQuery Error:" + e.getMessage());
+			throw e;
+		} finally {
+			// 释放资源连接池
+			DbPool.closeConnection(queryResult, queryStatement, conn);
 		}
-		closeConnection(queryResult, queryStatement, conn);
-		logger.info("查询完成,SQL[" + sql + "] 入参[" + params + "] " );
+		
+		if (logger.isInfoEnabled()) {
+			logger.info("查询完成,SQL[" + sql + "] 入参[" + params + "] " );
+		}
 		return new QueryResult(resultList, totleRows);
 	}
-
 
 	/**
 	 * 根据开始行和结束行数实现查询
@@ -112,16 +99,21 @@ public class DbQuery {
 	 * @return
 	 * @throws Exception
 	 */
-	public static QueryResult excuteQuery(String sql, Object[] params, int startKey, int endKey) throws SQLException {
+	public static QueryResult excuteQuery(String sql, Object[] params, int startKey, int pageSize) throws SQLException {
 //		public static ArrayList<DbDataLine> excuteQuery(String sql, Object[] params, long startKey, long endKey ) throws Exception {
-		logger.info("查询开始,SQL[" + sql + "] 入参[" + params.toString() + "] startKey[" + startKey + "]endKey[" + endKey + "]" );
+		if (logger.isInfoEnabled()) {
+			logger.info("查询开始,SQL[" + sql + "] startKey[" + startKey + "] pageSize[" + pageSize + "]" );
+			for(Object ob : params) {
+				logger.info(" 入参[" + ob.toString() + "]");
+			}
+		}
 		ResultSet queryResult = null; 
 		PreparedStatement queryStatement = null;
 		Connection conn = null;
 		int totleRows = 0;
+		int endKey = startKey + pageSize ;
 		 
 		conn = DbPool.getConnection();		//获取数据库连接
-//		queryStatement = conn.prepareStatement(sql);
 		queryStatement = conn.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 		
 		if (params != null) {
@@ -150,65 +142,125 @@ public class DbQuery {
 				DbDataLine dbDataLine = new DbDataLine(queryResult);
 				resultList.add(dbDataLine);
 			}
-		} catch (Exception e) {
+		} catch (SQLException e) {
 			logger.error("excuteQuery Error:" + e.getMessage());
+			throw e;
 		} finally {
 			// 释放资源连接池
-			closeConnection(queryResult, queryStatement, conn);
+			DbPool.closeConnection(queryResult, queryStatement, conn);
 		}
-		logger.info("查询完成,SQL[" + sql + "] 入参[" + params + "] startKey[" + startKey + "]endKey[" + endKey + "]" );
 		
+		if (logger.isInfoEnabled()) {
+			logger.info("查询完成,SQL[" + sql + "] startKey[" + startKey + "] endKey[" + endKey + "] pageSize[" + pageSize + "]");
+		}
 		return new QueryResult(resultList, totleRows);
 	}
-
-	/**
-	 * @author ding_kaiye
-	 * @param sql
-	 * @param params
-	 * @param start
-	 * @param end
-	 * @return
-	 * @throws Exception
-	 * 
-	 */
-//	
-//	public static ArrayList<ResultSet> excutePageQuery(String sql, Object[] params, long start, long end) throws Exception {
-//		ArrayList<ResultSet> returnList = null;
-//		return returnList ;
+	
+	
+	/** 
+	 * 数据库数据读入后 释放数据库连接, 
+	 * 使用 ResultSet不能显式的关闭数据库链接 , 连接的关闭不受控制  
+	 * 不启用 返回值类型为 ResultSet 的方法, 但保留此处代码
+	 * 20180717  
+	 **/ 
+	
+//	/**
+//	 * 返回  ResultSet 的查询结果 
+//	 * @param sql
+//	 * @param params
+//	 * @return
+//	 * @throws SQLException
+//	 */
+//		public static ResultSet excuteQueryDb(String sql, Object[] params) throws SQLException {
+//			
+//			ResultSet queryResult = null; 
+//			PreparedStatement queryStatement = null;
+//			Connection conn = null;
+//			
+//			if (logger.isInfoEnabled()) {
+//				logger.info("查询开始,SQL[" + sql + "] 入参[" + params + "] " );
+//				for(Object ob : params) {
+//					logger.info(" 入参[" + ob.toString() + "]");
+//				}
+//			}
+//			
+//			conn = DbPool.getConnection();		//获取数据库连接
+//			queryStatement = conn.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+//			
+//			if (params != null) {
+//				for (int i = 0; i < params.length; i++) {
+//					queryStatement.setObject(i + 1, params[i]);
+//				}
+//			}
+//			
+//			try {
+//				queryResult = queryStatement.executeQuery();
+//			} catch (Exception e) {
+//				logger.error("excuteQuery Error:" + e.getMessage());
+//				throw e;
+//			} finally {
+//				// 释放资源连接池
+//				DbPool.closeConnection(queryResult, queryStatement, conn);
+//			}
+//			
+//			if (logger.isInfoEnabled()) {
+//				logger.info("查询完成,SQL[" + sql + "] " );
+//			}
+//			
+//			return queryResult ; 
+//		}
+//		
+//		/**
+//		 * 未测试, 暂不使用 20180717 
+//		 * @param sql
+//		 * @param paramsMap
+//		 * @return
+//		 * @throws SQLException
+//		 */
+//	public static ResultSet excuteQueryDb(String sql, Map<String, String> paramsMap) throws SQLException {
+//
+//		if (logger.isInfoEnabled()) {
+//			logger.info("查询 SQL : [" + sql + "]");
+//		}
+//		// 遍历MAP
+//		for (Entry<?, ?> entry : paramsMap.entrySet()) {
+//			String key = (String) entry.getKey();
+//			String value = (String) entry.getValue();
+//
+//			// 替换 参数 数值
+//			sql = sql.replaceAll(":" + key + ":", value);
+//			if (logger.isInfoEnabled()) {
+//				logger.info(key + ":" + value + "替换完成");
+//			}
+//			if (logger.isDebugEnabled()) {
+//				logger.debug("SQL NOW IS :" + sql);
+//			}
+//		}
+//		if (logger.isInfoEnabled()) {
+//			logger.info("查询开始,SQL : [" + sql + "]");
+//		}
+//		ResultSet queryResult = null;
+//		PreparedStatement queryStatement = null;
+//		Connection conn = null;
+//			
+//		conn = DbPool.getConnection(); // 获取数据库连接
+//		queryStatement = conn.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+//
+//		try {
+//			queryResult = queryStatement.executeQuery();
+//		} catch (Exception e) {
+//			logger.error("excuteQuery Error:" + e.getMessage());
+//			throw e;
+//		} finally {
+//			// 释放资源连接池
+//			DbPool.closeConnection(queryResult, queryStatement, conn);
+//		}
+//		if (logger.isInfoEnabled()) {
+//			logger.info("查询完成,SQL : [" + sql + "]");
+//		}
+//
+//		return queryResult;
 //	}
-//	
-	
-	/**
-	 * 关闭数据库连接
-	 * @param resultSet
-	 * @param preparedStatement
-	 * @param conn
-	 */
-	private static void closeConnection(ResultSet resultSet, PreparedStatement preparedStatement, Connection conn) {
-		if (resultSet != null) {
-			try {
-				resultSet.close();
-			} catch (SQLException e) {
-				logger.error(e.getMessage());
-			}
-		}
-		// 关闭PreparedStatement对象
-		if (preparedStatement != null) {
-			try {
-				preparedStatement.close();
-			} catch (SQLException e) {
-				logger.error(e.getMessage());
-			}
-		}
-		// 关闭Connection 对象
-		if (conn != null) {
-			try {
-				conn.close();
-			} catch (SQLException e) {
-				logger.error("closeConnection ERROR: " + e.getMessage());
-			}
-		}
-
-	}
-	
+		
+		
 }

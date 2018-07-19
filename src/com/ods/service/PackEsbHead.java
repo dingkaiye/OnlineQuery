@@ -1,26 +1,12 @@
 package com.ods.service;
 
-import java.io.IOException;
 import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 
 import org.apache.log4j.Logger;
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.dom4j.Node;
-
-import com.ods.common.Config;
 import com.ods.common.Constant;
-import com.ods.exception.TxnException;
 import com.ods.log.OdsLog;
 import com.ods.message.AppHeadIn;
 import com.ods.message.AppHeadOut;
@@ -31,7 +17,6 @@ import com.ods.message.SysHeadOut;
 
 /**
  * @author ding_kaiye
- *
  */
 public class PackEsbHead {
 
@@ -63,7 +48,7 @@ public class PackEsbHead {
 	}
 	
 	public static SysHeadOut packEsbSysHead(SysHeadIn sysHeadIn, String serialNo ,
-			String txnSt, String retCd, String retMsg )  {
+		String txnSt, String retCd, String retMsg )  {
 
 		SysHeadOut SysHead = new SysHeadOut();
 		

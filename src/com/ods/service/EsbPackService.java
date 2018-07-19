@@ -13,10 +13,6 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 
 import org.apache.log4j.Logger;
-import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import com.ods.common.Config;
 import com.ods.common.Constant;
 import com.ods.db.DbDataLine;
 import com.ods.exception.TxnException;
@@ -30,12 +26,9 @@ import com.ods.message.LocalHead;
 import com.ods.message.SysHeadIn;
 import com.ods.message.SysHeadOut;
 import com.ods.message.TxnMessager;
-import com.ods.transaction.ITransaction;
-import com.ods.transaction.DepositTrans.Body.RspBody;
-import com.ods.transaction.DepositTrans.Body.TransResultLine;
 import com.ods.ws.TxnBody;
 
-public class EsbPackService extends Thread {
+public class EsbPackService extends AbstractService {
 	
 	/**
 	 * 组织ESB报文, 此服务处理正常状态的交易  
@@ -45,47 +38,51 @@ public class EsbPackService extends Thread {
 		
 	private static Logger logger = OdsLog.getTxnLogger("PackService");
 
-	/** 成功处理后, 转入的队列名称(默认值) */
-	private String nextQueue = Constant.SuccessQueue; //默认
-	
 	/** 交易配置文件中 , 字段属性配置项的前缀 */
 	private String txnCfgColumnPre = "Column.";
 	
 	private int sleeptime = 50;
 
-//	Properties properties = null;
-//	Properties SysConfig = null;
-
-	String QueueName = null;
-	
-//	private final String confile = Constant.ESBPACK_CONFIG_FILE; // 请求报文结构配置文件
-	
 	private final String RspBodyClass = "RspBodyClass";
 
-    /**
-    * @param QueueName 输入队列名称
-    * @param nextQueueName 输出队列名称
-    * @throws IOException
-    */
-	public EsbPackService(String QueueName, String nextQueueName) throws IOException {
-		this.QueueName = QueueName;
-		if (nextQueueName != null && ! "".equals(nextQueueName)) {
-			this.nextQueue = nextQueueName;
+	/** 输入队列  */
+	private String inQueue = null;
+	
+	/** 处理成功后, 转入的队列名称  */
+	private String nextQueue = null ;  // 默认 
+	
+	/** 处理失败后, 转入的队列名称  */
+	private String failQueue = null ;
+	
+ /**
+  * @param inQueueName    输入队列名称
+  * @param nextQueueName  输出队列名称
+  * @param failQueueName  失败队列
+  * @throws IOException
+  */
+	@Override
+	public	void ServiceInit(String inQueueName, String nextQueueName, String failQueueName) {
+		// TODO Auto-generated method stub
+		this.inQueue = inQueueName;
+		if(nextQueueName != null && ! "".equals(nextQueueName)){
+			this.nextQueue = nextQueueName ; 
 		}
-		logger.info("服务初始化完成, 输入队列:[" + this.QueueName + "] 输出队列:[" + this.nextQueue + "]");		
-		
-		
+		if(failQueueName != null && ! "".equals(failQueueName)){
+			this.failQueue = failQueueName ; 
+		}
+		logger.info("服务初始化完成, 输入队列:[" + this.inQueue + "] 输出队列:[" + this.nextQueue + "]");	
 	}
-
+	
+	
 	@Override
 	public void run() {
 		String SerialNo = null;
 		TxnMessager txnMessager = null;
 		while (true) {
 			try { // 从队列中获取 txnMessager
-				txnMessager = QueueManager.SysQueuePoll(QueueName);
+				txnMessager = QueueManager.SysQueuePoll(inQueue);
 			} catch (Exception e) {
-				logger.error("此次轮询" + QueueName + "出现异常, 稍后再次获取:" + e.getMessage());
+				logger.error("此次轮询" + inQueue + "出现异常, 稍后再次获取:" + e.getMessage());
 				try {
 					Thread.sleep(sleeptime);
 				} catch (InterruptedException e1) {
@@ -106,11 +103,11 @@ public class EsbPackService extends Thread {
 						packEsbMsg(txnMessager); // 保留此处结构,以便扩展
 					} catch (TxnException e) { // 交易级错误
 						logger.error("流水号" + SerialNo + " 组包出错:" + e.getMessage(), e);
-						QueueManager.moveToFailQueue(txnMessager); // 转入失败队列
+						QueueManager.moveToFailQueue(txnMessager, failQueue); // 转入失败队列
 						continue;
 					} catch (Exception e) {
 						logger.error("流水号" + SerialNo + " 组包出现Exception异常:", e);
-						QueueManager.moveToFailQueue(txnMessager); // 转入失败队列
+						QueueManager.moveToFailQueue(txnMessager, failQueue); // 转入失败队列
 						continue;
 					}
 
@@ -120,7 +117,7 @@ public class EsbPackService extends Thread {
 					continue;
 				} else {
 					try {
-						logger.trace("此次轮询" + QueueName + "未获得待处理交易,稍后再次获取");
+						logger.trace("此次轮询" + inQueue + "未获得待处理交易,稍后再次获取");
 						Thread.sleep(sleeptime);
 					} catch (InterruptedException e) {
 						logger.debug("sleep has be Interrupted");
@@ -128,8 +125,13 @@ public class EsbPackService extends Thread {
 					}
 				}
 			} catch (Exception e) {
-				logger.error("交易处理出现异常[" + SerialNo + "]" + e.getMessage());
-				QueueManager.moveToFailQueue(txnMessager);
+				try {
+					logger.error("交易处理出现异常[" + SerialNo + "]" + e.getMessage());
+					QueueManager.moveToFailQueue(txnMessager, failQueue, "系统错误, 请稍候重试" + e.getMessage());
+				} catch (Exception newE) {
+					newE.printStackTrace();
+				}
+				continue ;
 			}
 		}
 	}
@@ -233,10 +235,13 @@ public class EsbPackService extends Thread {
 			outColumes = strHead.split(",");
 			for(String columnStr : outColumes){
 				try{
-					String columnName = txnProperties.getProperty(txnCfgColumnPre + columnStr).trim();
+					// 查找对应关系配置, 取 columnStr 在 QueryMessager中名称
+					// 如果没有配置, 视为 QueryMessager中名称 与 RspBody.Head 中配置的字段同名
+					String columnName = txnProperties.getProperty(txnCfgColumnPre + columnStr);
 					if(columnName == null || "".equals(columnName)){
 						columnName = columnStr;
 					}
+					columnName = columnName.trim();
 					//获取数据中的字段名 
 					Object value = resultHead.get(columnName);
 					bodyHead.put(columnStr, value);  
@@ -270,11 +275,13 @@ public class EsbPackService extends Thread {
 				String value = null;
 				for (String columnStr : outColumes) {
 					
-					//取到 columnStr 在 返回结果中的名称, 查找对应关系 
-					String columnName = txnProperties.getProperty(txnCfgColumnPre + columnStr).trim();
+					// 查找对应关系配置, 取 columnStr 在 QueryMessager中名称
+					// 如果没有配置, 视为 QueryMessager中名称 与 RspBody.Array 中配置的字段同名
+					String columnName = txnProperties.getProperty(txnCfgColumnPre + columnStr);
 					if(columnName == null || "".equals(columnName)){
 						columnName = columnStr;
 					}
+					columnName = columnName.trim();
 					// 根据名称取到返回结果中的数据
 					Object dataObj = onelint.get(columnName);
 					if(dataObj != null){
@@ -302,7 +309,7 @@ public class EsbPackService extends Thread {
 			logger.error(rspBodyClassName + "获取交易Body对象时出现异常", e);
 			return instance;
 		}
-		logger.info(txnName + "流水号" + serialNo + "实例化 交易对应的Body类完成");	
+		logger.info(txnName + "流水号" + serialNo + "实例化 交易对应的Body类完成");
 		
 		// 根据配置 初始化 body 
 		instance.init(bodyHead, bodyArray); 

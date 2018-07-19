@@ -1,6 +1,5 @@
-package com.ods.transaction.DepositTrans.Body;
+package com.ods.transaction.FemTransDetailFile;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -12,7 +11,7 @@ import com.ods.common.NameSpace;
 import com.ods.ws.TxnBody;
 
 @XmlRootElement(name = "Body", namespace = NameSpace.ODS_URL)
-@XmlType(name="DepositTransRspBody", namespace=NameSpace.ODS_URL, propOrder = { "TotlNm", "RtrnNm", "Acct","AcctOfNm","DocTp", "CrtfctNo", "StrDt", "EndDt", "QuerySessionID", "TxnRsltAry"}) 
+@XmlType(name="FemTransDetailFileRspBody", namespace=NameSpace.ODS_URL, propOrder = { "TotlNm", "RtrnNm", "Acct","AcctOfNm","DocTp", "CrtfctNo", "StrDt", "EndDt", "QuerySessionID"}) 
 public class RspBody implements TxnBody {
 	
 	@XmlElement(namespace = NameSpace.ODS_URL )
@@ -34,9 +33,6 @@ public class RspBody implements TxnBody {
 	@XmlElement(namespace = NameSpace.ODS_URL )
 	public String QuerySessionID = null ; //
 
-	@XmlElement(name="TxnRsltAry", namespace = NameSpace.ODS_URL )
-	public List<TransResultLine> TxnRsltAry = null;
-	
 	@Override
 	public void init (Map<String, Object> Map, List<Map<String, Object>> List ) {
 
@@ -50,14 +46,6 @@ public class RspBody implements TxnBody {
 		this.EndDt     = (String) Map.get("EndDt")  ; //
 		this.QuerySessionID = (String) Map.get("QuerySessionID");
 		
-		TxnRsltAry = new ArrayList<TransResultLine>();
-//		for (Map<String, Object> ob: List ){
-//			TransResultLine tr = new TransResultLine(ob);
-//			TxnRsltAry.add(tr);
-//		}
 	}
-	
-	
-
 	
 }

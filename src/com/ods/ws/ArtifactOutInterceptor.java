@@ -39,8 +39,6 @@ public class ArtifactOutInterceptor extends AbstractPhaseInterceptor<Message>{
             try {
                 String str = IOUtils.toString(is);
                 logger.debug("返回响应报文 : \n" + str);
-                InputStream ism = new ByteArrayInputStream(str.getBytes());
-             //   message.setContent(InputStream.class, ism);
             } catch (IOException e) {
                 logger.debug("" , e);
             }
@@ -50,9 +48,10 @@ public class ArtifactOutInterceptor extends AbstractPhaseInterceptor<Message>{
     		   
             OutputStream os = message.getContent(OutputStream.class);   
    
-            CachedStream cs = new CachedStream();   
-   
-            message.setContent(OutputStream.class, cs);   
+            //CachedStream cs = new CachedStream();   
+            CachedOutputStream cs = new CachedOutputStream();   
+            
+            message.setContent(OutputStream.class, cs);  
    
             message.getInterceptorChain().doIntercept(message);   
    
@@ -91,7 +90,6 @@ public class ArtifactOutInterceptor extends AbstractPhaseInterceptor<Message>{
 			logger.debug(" \n" + xmlstring);
 			
 			Element root = document.getRootElement();
-//			root.add(DocumentHelper.createNamespace("soapenv", "http://schemas.xmlsoap.org/soap/envelope/") );
 			root.add(DocumentHelper.createNamespace("tns", NameSpace.ODS_WSDL) ); 
 			root.add(DocumentHelper.createNamespace("s", NameSpace.ODS_URL) ); 
 						
@@ -100,7 +98,7 @@ public class ArtifactOutInterceptor extends AbstractPhaseInterceptor<Message>{
 			// 这里对xml做处理，处理完后同理，写回流中
 			IOUtils.copy(new ByteArrayInputStream(xmlstring.getBytes("UTF-8")), os);
 
-			cs.close();
+			//cs.close();
 			os.flush();
 
 			message.setContent(OutputStream.class, os);
@@ -113,25 +111,19 @@ public class ArtifactOutInterceptor extends AbstractPhaseInterceptor<Message>{
     	
     } 
  
-    private class CachedStream extends CachedOutputStream { 
-    	 
-        public CachedStream() { 
-            super(); 
-        } 
- 
-        protected void doFlush() throws IOException { 
-            currentStream.flush(); 
-        } 
- 
-        protected void doClose() throws IOException { 
- 
-        } 
- 
-        protected void onWrite() throws IOException { 
- 
-        } 
- 
-    } 
+//	private class CachedStream extends CachedOutputStream {
+//
+//		public CachedStream() {
+//			super();
+//		}
+//		protected void doFlush() throws IOException {
+//			currentStream.flush();
+//		}
+//		protected void doClose() throws IOException {
+//		}
+//		protected void onWrite() throws IOException {
+//		}
+//	}
     
  
 }

@@ -31,10 +31,10 @@ public class DepositTransDetail implements ITransaction{
 		reqbody = (ReqBody) txnBody;
 		
 		// AcctId,StartDt,EndDt,PageBeginPos,PageShoeNum
-		String AcctId =  reqbody.getAcctAcc() ;  //账号
-		String StartDt =  reqbody.getStrDt() ;   // 开始日期
-		String EndDt =  reqbody.getEndDt();   // 结束日期
-		String pgBgn =  reqbody.getPgBgn();   //起始位置
+		String AcctId   =  reqbody.getAcctAcc() ;  //账号
+		String StartDt  =  reqbody.getStrDt() ;   // 开始日期
+		String EndDt    =  reqbody.getEndDt();   // 结束日期
+		String pgBgn    =  reqbody.getPgBgn();   //起始位置
 		String pgShwNum =  reqbody.getPgShwNum() ;  //显示条数
 		StringBuffer errorMsg = new StringBuffer();
 		
@@ -83,30 +83,40 @@ public class DepositTransDetail implements ITransaction{
 		
 		StringBuffer sql = new StringBuffer();
 		sql.append("select ");
-		sql.append(" ACCTID    Acct, ");
-		sql.append(" ACCTNAME  AcctOfNm, ");
-		sql.append(" CURRID    Ccy, ");
-		sql.append(" CERTTYPE  DocTp, ");
-		sql.append(" CERTID    CrtfctNo, ");
-		sql.append(" SEQID     EvntSrlNo, ");
-		sql.append(" CARDID    CrdNum, ");
-		sql.append(" ACCTNO    PsbkAcct, ");
-		sql.append(" TRANSDT   TxnDt, ");
-		sql.append(" AMT       TxnAmt, ");
-		sql.append(" BAL       Balce, ");
-		sql.append(" CTFLG     DoNotAcct, ");
-		sql.append(" DCFLG     DbAndCr, ");
-		sql.append(" REFLG     CorrSign, ");
-		sql.append(" REMARKD   AbstRsm, ");
-		sql.append(" OPPOACCT  AcctNo, ");
-		sql.append(" TELLER    OprNum, ");
-		sql.append(" TRANSORG  TdgNtw, ");
-		sql.append(" TLRSEQNO  TelleSrlNo ");
-		sql.append(" from TRANSDETAIL");
-		sql.append(" where ACCTID = ? and TRANSDT >= ? and TRANSDT <= ? ");
-		sql.append(" order by id, EvntSrlNo, ACCTID");
-		String params[] = {AcctId, StartDt, EndDt};
+		//sql.append("  ?        Acct            , ");
+		sql.append("  a.CUST_NAME          AcctOfNm        , ");
+		sql.append("  a.CERT_TYPE          DocTp           , ");
+		sql.append("  a.CERT_ID            CrtfctNo        , ");
+		sql.append("  b.SEQID              EvntSrlNo       , ");
+		sql.append("  b.ACCT_ID_TRANS      CustAcctNO      , ");
+		sql.append("  b.ACCT_SEQ_TRANS     AcctSeqNo       , ");
+		sql.append("  b.ACCT_TYPE_TRANS    VoucherType     , ");
+		sql.append("  b.TRANS_CBS_CD       CBSTransID      , ");
+		sql.append("  b.TRANS_CD           TransID         , ");
+		sql.append("  b.TRANS_CHL          ChannelID       , ");
+		sql.append("  b.TRANS_DT           TransDt         , ");
+		sql.append("  b.TRANS_TM           TransTime       , ");
+		sql.append("  b.TRANS_AMT          TxnAmt          , ");
+		sql.append("  b.BAL                Balce           , ");
+		sql.append("  b.CT_FLG             DoNotAcct       , ");
+		sql.append("  b.DC_FLG             DbAndCr         , ");
+		sql.append("  b.CURR_ID            Ccy             , ");
+		sql.append("  b.RE_FLG             CorrSign        , ");
+		sql.append("  b.REMARKS            AbstRsm         , ");
+		sql.append("  b.OPPOACCT           AcctNo          , ");
+		sql.append("  b.TELLER             OprNum          , ");
+		sql.append("  b.TRANS_ORG          TdgNtw          , ");
+		sql.append("  b.TLR_SEQNO          TelleSrlNo      , ");
+		sql.append("  b.REQIP              TransIP           ");
+		sql.append("from  H_DEP_ACCT  A  ");
+		sql.append(" left join  H_DEP_DETAIL B    ");
+		sql.append("  on   a.SUB_ACCT_ID = b.SUB_ACCT_ID  ");
+		sql.append(" where a.SUB_ACCT_ID = ? and b.SUB_ACCT_ID = ? and b.TRANS_DT >= ? and b.TRANS_DT <= ? ");
+		sql.append(" order by b.TRANS_DT , b.TRANS_TM, EvntSrlNo ");
+		String params[] = {AcctId, AcctId, StartDt, EndDt};
 		queryResult = DbQuery.excuteQuery(sql.toString(), params, PageBeginPos, PageBeginPos+PageShoeNum);
+		
+		// 导出文件 
 		
 		ArrayList<DbDataLine> resultList = queryResult.getResultList();
 		DbDataLine head = new DbDataLine();
@@ -114,6 +124,7 @@ public class DepositTransDetail implements ITransaction{
 			head = resultList.get(0);
 		}
 		QueryMessager Result = new QueryMessager(head, resultList);
+		Result.resultHeadAdd("Acct", AcctId) ;
 		Result.resultHeadAdd("TotlNm", queryResult.getTotalRows()+""); 
 		Result.resultHeadAdd("RtrnNm", resultList.size()+"");
 		Result.resultHeadAdd("STRDT", StartDt+"");

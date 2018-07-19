@@ -1,5 +1,8 @@
 package com.ods.db;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
 
@@ -27,10 +30,22 @@ public class DbPool {
 	public static void init() {
 		try {
 			dataSource = getDataSource();
+			dataSource.init();
 		} catch (Exception e) {
-			logger.error("数据库连接池建立失败,稍后连接时将重试");
-			e.printStackTrace();
+			logger.error("数据库连接池建立失败,稍后连接时将重试", e);
 		}
+		
+		logger.info("测试获取数据库连接 开始");
+		DruidPooledConnection connnection = null;
+		try {
+			connnection = dataSource.getConnection();
+		} catch (SQLException e) {
+			logger.error("测试获取数据库连接 失败, 新查询时将重试", e);
+		}
+		if( connnection != null) {
+			logger.info("测试获取数据库连接 成功");
+		}
+		closeConnection(connnection);
 	}
 	
 	/**
@@ -45,21 +60,23 @@ public class DbPool {
 			try {
 				dataSource = getDataSource();
 			} catch (Exception e) {
-				e.printStackTrace();
-				logger.error("数据库连接池建立失败,稍后连接时将重试");
+				logger.error("数据库连接池建立失败,稍后连接时将重试", e);
 				return null;
 			}
-			logger.info("数据库连接池建立完毕");
+			logger.info("数据库连接池重新建立完成");
 		}
-		
+		if(logger.isDebugEnabled()) {
+			logger.debug("获取数据库连接池连接开始");
+		}
 		DruidPooledConnection connnection = null;
 		try {
 			connnection = dataSource.getConnection();
 		} catch (SQLException e) {
-			e.printStackTrace();
 			logger.error("获取数据库连接失败", e);
 		}
-		logger.debug("数据库连接获取完毕");
+		if(logger.isDebugEnabled()) {
+			logger.debug("获取数据库连接池连接完成");
+		}
 		return connnection;
 	}
 
@@ -68,9 +85,81 @@ public class DbPool {
 	private static DruidDataSource getDataSource() throws Exception {
 		DruidDataSource druidDataSource = null;
 		Properties properties = Config.loadConfigPropertiesFile("druid.properties");
+		//properties.put("password", "odss");
 		druidDataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(properties);
 		logger.info("数据库连接池建立完毕");
 		return druidDataSource; 
+	}
+	
+	/**
+	 * 关闭数据库连接
+	 * @param resultSet
+	 * @param preparedStatement
+	 * @param conn
+	 */
+	protected static void closeConnection (Connection conn) {
+		if (conn != null) {
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				logger.error("closeConnection ERROR: " + e.getMessage());
+			}
+		}
+		logger.info("Close Connection Complate" );
+	}
+	protected static void closeConnection(ResultSet resultSet, PreparedStatement preparedStatement, Connection conn) {
+		if (resultSet != null) {
+			try {
+				resultSet.close();
+			} catch (SQLException e) {
+				logger.error(e.getMessage());
+			}
+		}
+		// 关闭PreparedStatement对象
+		if (preparedStatement != null) {
+			try {
+				preparedStatement.close();
+			} catch (SQLException e) {
+				logger.error(e.getMessage());
+			}
+		}
+		// 关闭Connection 对象
+		if (conn != null) {
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				logger.error("closeConnection ERROR: " + e.getMessage());
+			}
+		}
+
+	}
+	
+	
+	protected static void closeConnection(PreparedStatement preparedStatement, Connection conn) {
+//		if (resultSet != null) {
+//			try {
+//				resultSet.close();
+//			} catch (SQLException e) {
+//				logger.error(e.getMessage());
+//			}
+//		}
+		// 关闭PreparedStatement对象
+		if (preparedStatement != null) {
+			try {
+				preparedStatement.close();
+			} catch (SQLException e) {
+				logger.error(e.getMessage());
+			}
+		}
+		// 关闭Connection 对象
+		if (conn != null) {
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				logger.error("closeConnection ERROR: " + e.getMessage());
+			}
+		}
+
 	}
 	
 }

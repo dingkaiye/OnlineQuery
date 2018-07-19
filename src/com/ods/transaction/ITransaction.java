@@ -1,8 +1,6 @@
 package com.ods.transaction;
 
 import java.sql.SQLException;
-import java.util.Map;
-
 import com.ods.exception.TxnException;
 import com.ods.message.QueryMessager;
 import com.ods.ws.TxnBody;

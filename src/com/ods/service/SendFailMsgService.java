@@ -3,7 +3,7 @@ package com.ods.service;
 import java.io.IOException;
 import java.util.Properties;
 import org.apache.log4j.Logger;
-import com.ods.common.Config;
+//import com.ods.common.Config;
 import com.ods.common.Constant;
 import com.ods.log.OdsLog;
 import com.ods.manager.QueueManager;
@@ -12,7 +12,7 @@ import com.ods.message.EsbMessageOut;
 import com.ods.message.EsbMessage;
 import com.ods.message.TxnMessager;
 
-public class SendFailMsgService extends Thread {
+public class SendFailMsgService extends AbstractService {
 	
 	/**
 	 * 处理失败的交易, 组织失败报文并返回
@@ -22,27 +22,36 @@ public class SendFailMsgService extends Thread {
 		
 	private static Logger logger = OdsLog.getTxnLogger("SendService");
 
-	/** 成功处理后, 转入的队列名称(默认值) */
-	private String nextQueue = null; //默认
-	
 	private int sleeptime = 50;
 
 	Properties properties = null;
-	String QueueName = null;
-	final String confile = Constant.ESBPACK_CONFIG_FILE; // 请求报文结构配置文件
-
-    /**
-    * @param QueueName 输入队列名称
-    * @param nextQueueName 输出队列名称
-    * @throws IOException
-    */
-	public SendFailMsgService(String QueueName, String nextQueueName) throws IOException {
-		this.QueueName = QueueName;
-		if (nextQueueName != null && ! "".equals(nextQueueName)) {
-			this.nextQueue = nextQueueName;
+	
+	/** 输入队列  */
+	private String inQueue = null;
+	
+	/** 处理成功后, 转入的队列名称  */
+	private String nextQueue = null ;  // 默认 
+	
+	/** 处理失败后, 转入的队列名称  */
+	private String failQueue = null ;
+	
+ /**
+  * @param inQueueName    输入队列名称
+  * @param nextQueueName  输出队列名称
+  * @param failQueueName  失败队列
+  * @throws IOException
+  */
+	@Override
+	public	void ServiceInit(String inQueueName, String nextQueueName, String failQueueName) {
+		// TODO Auto-generated method stub
+		this.inQueue = inQueueName;
+		if(nextQueueName != null && ! "".equals(nextQueueName)){
+			this.nextQueue = nextQueueName ; 
 		}
-		logger.info("服务初始化完成, 输入队列:[" + this.QueueName + "] 输出队列:[" + this.nextQueue + "]");
-		
+		if(failQueueName != null && ! "".equals(failQueueName)){
+			this.failQueue = failQueueName ; 
+		}
+		logger.info("服务初始化完成, 输入队列:[" + this.inQueue + "] 输出队列:[" + this.nextQueue + "]");	
 	}
 
 	@Override
@@ -54,9 +63,9 @@ public class SendFailMsgService extends Thread {
 		while (true) {
 			try { //服务不退出
 				try { // 从队列中获取 txnMessager
-					txnMessager = QueueManager.SysQueuePoll(QueueName);
+					txnMessager = QueueManager.SysQueuePoll(inQueue);
 				} catch (Exception e) {
-					logger.error("此次轮询" + QueueName + "出现异常, 稍后再次获取:" + e.getMessage());
+					logger.error("此次轮询" + inQueue + "出现异常, 稍后再次获取:" + e.getMessage());
 					try {
 						Thread.sleep(sleeptime);
 					} catch (InterruptedException e1) {
@@ -102,7 +111,7 @@ public class SendFailMsgService extends Thread {
 					}
 				} else {
 					try {
-						logger.trace("此次轮询" + QueueName + "未获得待处理交易,稍后再次获取");
+						logger.trace("此次轮询" + inQueue + "未获得待处理交易,稍后再次获取");
 						Thread.sleep(sleeptime);
 					} catch (InterruptedException e) {
 						logger.debug("sleep has be Interrupted", e);
@@ -110,8 +119,13 @@ public class SendFailMsgService extends Thread {
 				}
 
 			} catch (Exception e) {
-				logger.error("交易处理出现异常[" + SerialNo + "]" + e.getMessage());
-				//QueueManager.moveToFailQueue(txnMessager);
+				try {
+					logger.error("交易处理出现异常[" + SerialNo + "]" + e.getMessage());
+					QueueManager.moveToFailQueue(txnMessager, failQueue, "系统错误, 请稍候重试" + e.getMessage());
+				} catch (Exception newE) {
+					newE.printStackTrace();
+				}
+				continue ;
 			}
 
 		}

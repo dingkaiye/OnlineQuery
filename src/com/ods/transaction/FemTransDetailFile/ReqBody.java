@@ -1,4 +1,4 @@
-package com.ods.transaction.DepositTrans.Body;
+package com.ods.transaction.FemTransDetailFile;
 
 import java.util.List;
 import java.util.Map;
@@ -11,7 +11,7 @@ import com.ods.common.NameSpace;
 import com.ods.ws.TxnBody;
 
 @XmlRootElement(namespace=NameSpace.ODS_URL)
-@XmlType(name="DepositTransReqBody", namespace=NameSpace.ODS_URL)
+@XmlType(name="FemTransDetailFileReqBody", namespace=NameSpace.ODS_URL)
 //@XmlType(propOrder = { "AcctAcc", "StrDt", "EndDt","PgBgn","PgShwNum"}) 
 public class ReqBody implements TxnBody {
 	private String AcctAcc   = new String();   // 账号
