@@ -7,7 +7,18 @@ package com.ods.common;
  */
 public class NameSpace {  
 
-	public static final String ODS_URL  = "http://127.0.0.1:8090/ODS"  ;
-    public static final String ODS_WSDL = "http://127.0.0.1:8090/ODS/wsdl" ;
+	public static final String SOAP_URL  = "http://schemas.xmlsoap.org/soap/envelope/" ;
+	
+//	/** 本地测试环境  */
+//	public static final String ODS_URL  = "http://62.107.241.175:8090/ODS"  ;
+//  public static final String ODS_WSDL = "http://62.107.241.175:8090/ODS/wsdl" ;
+    
+//    /** SIT1 测试环境  */
+	public static final String ODS_URL  = "http://62.107.224.67:8090/ODS"  ;
+    public static final String ODS_WSDL = "http://62.107.224.67:8090/ODS/wsdl" ;
+
+    /** SIT2 测试环境  */
+//	public static final String ODS_URL  = "http://62.107.224.99:8090/ODS"  ;
+//  public static final String ODS_WSDL = "http://62.107.224.99:8090/ODS/wsdl" ;
     
 } 

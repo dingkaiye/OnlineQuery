@@ -11,8 +11,8 @@ import com.ods.log.OdsLog;
 import com.ods.message.QueryMessager;
 import com.ods.message.QueryResult;
 import com.ods.transaction.ITransaction;
+import com.ods.transaction.TxnBody;
 import com.ods.transaction.DepositTrans.Body.ReqBody;
-import com.ods.ws.TxnBody;
 
 public class DepositTransDetail implements ITransaction{
 	Logger logger = OdsLog.getTxnLogger("DepositTransDetail");

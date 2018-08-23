@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Properties;
 import org.apache.log4j.Logger;
-import com.ods.common.Constant;
 import com.ods.exception.TxnException;
 import com.ods.log.OdsLog;
 import com.ods.manager.QueueManager;
@@ -12,7 +11,7 @@ import com.ods.manager.TxnConfigManager;
 import com.ods.message.QueryMessager;
 import com.ods.message.TxnMessager;
 import com.ods.transaction.ITransaction;
-import com.ods.ws.TxnBody;
+import com.ods.transaction.TxnBody;
 
 /**
  * 交易管理分配类, 系统级交易相关处理
@@ -68,11 +67,16 @@ public class TxnService extends AbstractService {
 		String txnName = null;
 		
 		String txnClassName = null;
-//		String reqBodyClassName = null;
-//		String rspBodyClassName = null;
+		final Thread service = Thread.currentThread() ; // 当前线程
+		final String serviceName = service.getName();   // 当前线程名
 		
 		String SerialNo = null;
 		while (true) {
+			try {
+				service.setName( serviceName );
+			} catch (Exception e) {
+				logger.error("Thread Set Name Catch Excrption" + e, e);
+			}
 			// 查询对应交易
 			TxnMessager txnMessager = null;
 			try {
@@ -84,17 +88,19 @@ public class TxnService extends AbstractService {
 				} catch (InterruptedException e1) {
 					logger.warn("Thread.sleep Interrupted");
 				}
+				continue ;
 			}
 			try {
 				if (null != txnMessager) {
 					txnName = txnMessager.getTxnId(); // 获取交易代号
 					SerialNo = txnMessager.getSerialNo(); // 获取 流水号
-					logger.info(txnName + "流水号" + SerialNo + "处理开始");
-					
 					if (txnMessager.getMsgStatus() != true) { // 获取交易状态
 						logger.info("交易:" + txnName + " 流水号" + SerialNo + " 状态为" + false + ", 交易不再处理");
 						continue;
 					}
+
+					logger.info(txnName + "流水号" + SerialNo + "处理开始");
+					service.setName( serviceName + ":" + SerialNo) ; // 线程名中添加流水号 
 					
 					//1.  检查交易代号是否存在
 					if (txnName == null ||  "".equals(txnName) ) {
@@ -138,6 +144,7 @@ public class TxnService extends AbstractService {
 					} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
 						logger.error(txnClassName + "获取交易处理对象时出现异常", e);
 						QueueManager.moveToFailQueue(txnMessager, failQueue); // 转入失败交易队列
+						continue ;
 					}
 					logger.info(txnName + "流水号" + SerialNo + "实例化 交易对应的处理类完成, 交易处理类是:" + instance);
 					
@@ -203,7 +210,7 @@ public class TxnService extends AbstractService {
 					logger.error("交易处理出现异常[" + SerialNo + "]" + e.getMessage());
 					QueueManager.moveToFailQueue(txnMessager, failQueue, "系统错误, 请稍候重试" + e.getMessage());
 				} catch (Exception newE) {
-					newE.printStackTrace();
+					logger.error("New Exception", newE);
 				}
 				continue;
 			}

@@ -37,8 +37,9 @@ public class TxnCntContrl {
 		} catch (IOException e) {
 			logger.error("读取系统配置文件 " + Constant.SysConfig + "失败");
 		}
-		
-		maxTxnCntCfg = SysConfig.getProperty(Constant.MaxTxnCnt); //读取配置
+		if (SysConfig != null ) {
+			maxTxnCntCfg = SysConfig.getProperty(Constant.MaxTxnCnt); //读取配置
+		}
 //		TimeOut = SysConfig.getProperty(Constant.TimeOut); //读取配置
 		if (maxTxnCntCfg != null ){
 			MaxTxnCnt = new Integer( SysConfig.getProperty(Constant.MaxTxnCnt) );

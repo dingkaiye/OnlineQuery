@@ -76,9 +76,11 @@ public class Config {
 			try {
 				if (null != inputStream) {
 					inputStream.close();
+					inputStream = null ;
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				inputStream.close();
+				inputStream = null;
 			}
 		}
 		return properties;

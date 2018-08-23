@@ -56,11 +56,19 @@ public class SendSuccMsgService extends AbstractService {
 	
 	@Override
 	public void run() {
+		
+		final Thread service = Thread.currentThread() ; // 当前线程
+		final String serviceName = service.getName();   // 当前线程名
 		String SerialNo = null;
 		String txnName = null ;
 		TxnMessager txnMessager = null;
 	
 		while (true) {
+			try {
+				service.setName( serviceName );
+			} catch (Exception e) {
+				logger.error("Thread Set Name Catch Excrption" + e, e);
+			}
 			try { //服务不退出
 				try { // 从队列中获取 txnMessager
 					txnMessager = QueueManager.SysQueuePoll(inQueue);
@@ -71,6 +79,7 @@ public class SendSuccMsgService extends AbstractService {
 					} catch (InterruptedException e1) {
 						logger.warn("Thread.sleep InterruptedException");
 					}
+					continue ;
 				}
 				
 				if (null != txnMessager) {
@@ -81,14 +90,14 @@ public class SendSuccMsgService extends AbstractService {
 						continue;
 					}
 					try {
-						// 取得通讯方式 同步, 异步
+						service.setName( serviceName + ":" + SerialNo) ; // 线程名中添加流水号 
 
 						// 同步方式, 取得TxnMessage中记录的线程, 中断线程 sleep
 						// 先实现同步方式 相应, 后期开发异步相应方式
 						Thread headler = (Thread) txnMessager.getHeadlerThread();
 						headler.interrupt(); // 中断 headler的等待
 
-						// 异步方式, 放入 对应的 Gate 队列
+						// 异步方式, 放入 对应的 Gate 队列 暂未实现
 
 						continue;
 
@@ -110,7 +119,7 @@ public class SendSuccMsgService extends AbstractService {
 					logger.error("交易处理出现异常[" + SerialNo + "]" + e.getMessage());
 					QueueManager.moveToFailQueue(txnMessager, failQueue, "系统错误, 请稍候重试" + e.getMessage());
 				} catch (Exception newE) {
-					newE.printStackTrace();
+					logger.error("New Exception" + newE, newE);
 				}
 				continue ;
 			}

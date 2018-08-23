@@ -37,8 +37,7 @@ public class QueueManager {
 		try {
 			QueueConfig = Config.getPropertiesConfig(Constant.SysConfig);
 		} catch (IOException e) {
-			thisLogger.error("读取队列配置文件" + Constant.SysConfig + "失败");
-			e.printStackTrace();
+			thisLogger.error("读取队列配置文件" + Constant.SysConfig + "失败", e);
 			return false;
 		}
 		

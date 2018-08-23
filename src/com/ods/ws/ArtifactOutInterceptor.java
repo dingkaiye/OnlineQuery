@@ -1,129 +1,132 @@
 package com.ods.ws;
 
 
-import java.io.ByteArrayInputStream; 
-import java.io.IOException; 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream; 
 import java.io.OutputStream;
+import java.util.List;
 
+import org.apache.cxf.binding.soap.SoapMessage;
 import org.apache.cxf.helpers.IOUtils;
 import org.apache.cxf.io.CachedOutputStream;
-import org.apache.cxf.phase.Phase; 
+import org.apache.cxf.phase.Phase;
 import org.apache.log4j.Logger;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
+import org.dom4j.Namespace;
+import org.dom4j.Node;
+import org.dom4j.QName;
 
 import com.ods.common.NameSpace;
 import com.ods.log.OdsLog;
 
-import org.apache.cxf.message.Message; 
 import org.apache.cxf.phase.AbstractPhaseInterceptor; 
 
-public class ArtifactOutInterceptor extends AbstractPhaseInterceptor<Message>{   
+	public class ArtifactOutInterceptor extends AbstractPhaseInterceptor<SoapMessage>{   
 	 
 	private static Logger logger = OdsLog.getTxnLogger("ArtifactOutInterceptor");
 	
 	public ArtifactOutInterceptor() {   
-        //这儿使用pre_stream，意思为在流关闭之前   
+        //在流关闭之前   
         super(Phase.PRE_STREAM);   
     }   
    
  
     @Override
-    public void handleMessage(Message message) { 
-    	
-    	InputStream is = message.getContent(InputStream.class);
-    	if (is != null) {
-            try {
-                String str = IOUtils.toString(is);
-                logger.debug("返回响应报文 : \n" + str);
-            } catch (IOException e) {
-                logger.debug("" , e);
-            }
-		}
-    	
+    public void handleMessage(SoapMessage message) { 
+    	logger.debug("" + message.getClass() );	
     	try {   
-    		   
-            OutputStream os = message.getContent(OutputStream.class);   
-   
-            //CachedStream cs = new CachedStream();   
-            CachedOutputStream cs = new CachedOutputStream();   
+    		logger.debug("message"  + message.getClass() + message);
+    		String xmlstring = null ;  
+    		
+            OutputStream os = message.getContent(OutputStream.class); 
+    		logger.debug(":" + os.getClass());
+            CachedOutputStream cs = new CachedOutputStream(1073741824);  // 2^30 
+            message.setContent(OutputStream.class, cs); 
+            message.getInterceptorChain().doIntercept(message);
             
-            message.setContent(OutputStream.class, cs);  
-   
-            message.getInterceptorChain().doIntercept(message);   
-   
-            CachedOutputStream csnew = (CachedOutputStream) message.getContent(OutputStream.class);   
-            InputStream in = csnew.getInputStream();   
-			
-			String xmlstring = IOUtils.toString(in);
-            // 处理报文   
-			logger.debug("xmlstring \n" + xmlstring);
-			xmlstring = xmlstring.replaceAll("</", "</s:");
-			logger.debug("A \n" + xmlstring);
-			xmlstring = xmlstring.replaceAll("<", "<s:");
-			xmlstring = xmlstring.replaceAll("<s:/s:", "</s:");
-			logger.debug("B \n" + xmlstring);
-			xmlstring = xmlstring.replaceAll("</s:ns2:", "</tns:");
-			logger.debug("C \n" + xmlstring);
-			xmlstring = xmlstring.replaceAll("<s:ns2:", "<tns:");
-			logger.debug("D \n" + xmlstring);
-			xmlstring = xmlstring.replaceAll("</s:soap:", "</soap:");
-			logger.debug("E \n" + xmlstring);
-			xmlstring = xmlstring.replaceAll("<s:soap:", "<soap:");
-			logger.debug("F \n" + xmlstring);
-			xmlstring = xmlstring.replaceAll("xmlns:ns2=", "xmlns:tns=");
-			logger.debug("G \n" + xmlstring);
-			xmlstring = xmlstring.replaceAll("xmlns=", "xmlns:s=");
-			logger.debug("H \n" + xmlstring);
+            cs = (CachedOutputStream) message.getContent(OutputStream.class);   
+            InputStream in = cs.getInputStream(); 
+            
+            xmlstring = IOUtils.toString(in);
+            logger.info("输出报文为:" + xmlstring);
 
-//			 
 			Document document = null;
+			boolean flg = true ; 
 			try {
 				document = DocumentHelper.parseText(xmlstring);
 			} catch (DocumentException e) {
-				e.printStackTrace();
+				logger.error("报文 转换到 Document 出错, 请检查报文格式", e);
+				flg = false;
 			}
-			
+
 			logger.debug(" \n" + xmlstring);
+			if (flg) {
+				Element root = document.getRootElement();
+				QName qname = null;
+				final String rooturl = "http://schemas.xmlsoap.org/soap/envelope/" ;
+				// 
+				String xpath = "/*[local-name()='Envelope']/*[local-name()='Body']";
+				Element txnRspNode = (Element) root.selectSingleNode(xpath);
+				txnRspNode.remove(txnRspNode.getNamespaceForPrefix(rooturl));
+				
+				qname = null;
+				String nodeName = txnRspNode.getName();
+				qname = new QName(nodeName , new Namespace("soapenv", rooturl));
+				txnRspNode.setQName(qname);
+				
+				// 取  Body 下 交易节点 
+				xpath = "/*[local-name()='Envelope']/*[local-name()='Body']/*";
+				txnRspNode = (Element) root.selectSingleNode(xpath);
+				
+				txnRspNode.remove(txnRspNode.getNamespaceForURI(NameSpace.ODS_WSDL));
+				txnRspNode.remove(txnRspNode.getNamespaceForURI(NameSpace.ODS_URL));
 			
-			Element root = document.getRootElement();
-			root.add(DocumentHelper.createNamespace("tns", NameSpace.ODS_WSDL) ); 
-			root.add(DocumentHelper.createNamespace("s", NameSpace.ODS_URL) ); 
-						
-			xmlstring = root.asXML();
-			
-			// 这里对xml做处理，处理完后同理，写回流中
-			IOUtils.copy(new ByteArrayInputStream(xmlstring.getBytes("UTF-8")), os);
+				nodeName = txnRspNode.getName();
+				qname = new QName(nodeName , new Namespace("tns", NameSpace.ODS_WSDL));
+				txnRspNode.setQName(qname);
+				txnRspNode.add(DocumentHelper.createNamespace("tns", NameSpace.ODS_WSDL));
+				txnRspNode.add(DocumentHelper.createNamespace("s", NameSpace.ODS_URL));
+				
+				// 遍历 head , body 
+				xpath = "/*[local-name()='Envelope']/*[local-name()='Body']/*[local-name()='" + nodeName + "']//*" ;
+				List<Node> ListNodeS = root.selectNodes(xpath);
+				for (Node node : ListNodeS ) {
+					Element el = (Element) node; 
+					el.remove(txnRspNode.getNamespaceForPrefix(rooturl));
+					nodeName = el.getName();
+					qname = new QName(nodeName , new Namespace("s", NameSpace.ODS_URL));
+					el.remove(txnRspNode.getNamespaceForURI(NameSpace.ODS_WSDL));
+					el.remove(txnRspNode.getNamespaceForURI(NameSpace.ODS_URL));
+					el.setQName(qname);
+					el.add(DocumentHelper.createNamespace("tns", NameSpace.ODS_WSDL));
+					el.add(DocumentHelper.createNamespace("s", NameSpace.ODS_URL));
+				}
+				
+				
+				String rootName  = root.getName();
+				txnRspNode.remove(txnRspNode.getNamespaceForPrefix(rooturl));
+				qname = new QName(rootName , new Namespace("soapenv", rooturl));
+				root.setQName(qname);
+				
+				root.add(DocumentHelper.createNamespace("tns", NameSpace.ODS_WSDL));
+				root.add(DocumentHelper.createNamespace("s", NameSpace.ODS_URL));
 
-			//cs.close();
+				
+				xmlstring = root.asXML();
+
+				// 处理完后同理，写回流中
+				IOUtils.copy(new ByteArrayInputStream(xmlstring.getBytes("UTF-8")), os);
+				
+			}
+			in.close();
 			os.flush();
-
 			message.setContent(OutputStream.class, os);
- 
         } catch (Exception e) { 
-            logger.error("Error when split original inputStream. CausedBy : " + "\n" + e); 
+            logger.error("Error when split original inputStream. CausedBy : " + "\n" , e); 
         } 
-    	
-    	
-    	
     } 
- 
-//	private class CachedStream extends CachedOutputStream {
-//
-//		public CachedStream() {
-//			super();
-//		}
-//		protected void doFlush() throws IOException {
-//			currentStream.flush();
-//		}
-//		protected void doClose() throws IOException {
-//		}
-//		protected void onWrite() throws IOException {
-//		}
-//	}
-    
  
 }

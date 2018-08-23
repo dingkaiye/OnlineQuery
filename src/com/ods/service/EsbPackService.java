@@ -26,7 +26,7 @@ import com.ods.message.LocalHead;
 import com.ods.message.SysHeadIn;
 import com.ods.message.SysHeadOut;
 import com.ods.message.TxnMessager;
-import com.ods.ws.TxnBody;
+import com.ods.transaction.TxnBody;
 
 public class EsbPackService extends AbstractService {
 	
@@ -76,9 +76,18 @@ public class EsbPackService extends AbstractService {
 	
 	@Override
 	public void run() {
+		
+		final Thread service = Thread.currentThread() ; // 当前线程
+		final String serviceName = service.getName();   // 当前线程名
 		String SerialNo = null;
 		TxnMessager txnMessager = null;
+		
 		while (true) {
+			try {
+				service.setName( serviceName );
+			} catch (Exception e) {
+				logger.error("Thread Set Name Catch Excrption" + e, e);
+			}
 			try { // 从队列中获取 txnMessager
 				txnMessager = QueueManager.SysQueuePoll(inQueue);
 			} catch (Exception e) {
@@ -88,6 +97,7 @@ public class EsbPackService extends AbstractService {
 				} catch (InterruptedException e1) {
 					logger.warn("Thread.sleep InterruptedException");
 				}
+				continue ;
 			}
 
 			try { // 组包
@@ -100,6 +110,7 @@ public class EsbPackService extends AbstractService {
 					logger.info("流水号" + SerialNo + " 组包服务处理开始");
 					// 组包
 					try {
+						service.setName( serviceName + ":" + SerialNo);
 						packEsbMsg(txnMessager); // 保留此处结构,以便扩展
 					} catch (TxnException e) { // 交易级错误
 						logger.error("流水号" + SerialNo + " 组包出错:" + e.getMessage(), e);
@@ -120,8 +131,7 @@ public class EsbPackService extends AbstractService {
 						logger.trace("此次轮询" + inQueue + "未获得待处理交易,稍后再次获取");
 						Thread.sleep(sleeptime);
 					} catch (InterruptedException e) {
-						logger.debug("sleep has be Interrupted");
-						e.printStackTrace();
+						logger.debug("sleep has be Interrupted", e);
 					}
 				}
 			} catch (Exception e) {
@@ -129,7 +139,7 @@ public class EsbPackService extends AbstractService {
 					logger.error("交易处理出现异常[" + SerialNo + "]" + e.getMessage());
 					QueueManager.moveToFailQueue(txnMessager, failQueue, "系统错误, 请稍候重试" + e.getMessage());
 				} catch (Exception newE) {
-					newE.printStackTrace();
+					logger.error("New Exception" + newE, newE);
 				}
 				continue ;
 			}
@@ -176,7 +186,7 @@ public class EsbPackService extends AbstractService {
 		TxnBody txnBody = packEsbBody(serialNo, TxnId, resultHead, resultList);
 		
 		esbMessageOut.setBody(txnBody);
-		logger.info("流水号" + serialNo + "组应答包 Body 完成"); 
+		logger.info("组应答包 Body 完成"); 
 		printXml(serialNo, txnBody);
 		
 		txnMessager.setMessageOut(esbMessageOut);
@@ -205,11 +215,11 @@ public class EsbPackService extends AbstractService {
 		try {
 			txnProperties = TxnConfigManager.getTxnConfig(txnName) ;
 		} catch (Exception e) {
-			logger.error(txnName + "流水号" + serialNo + "获取交易配置出错" , e); 
+			logger.error(txnName + "获取交易配置出错" , e); 
 			return instance;
 		}
 		if (txnProperties == null) {
-			logger.error("流水号" + serialNo + "对应的交易" + txnName +  "不存在" ); 
+			logger.error( "对应的交易" + txnName +  "不存在" ); 
 			return instance;
 		}
 
@@ -220,14 +230,16 @@ public class EsbPackService extends AbstractService {
 		// 转换 到 body 使用的 Map 和  List
 		String[] outColumes = null;
 		String strHead = null;
+		String headMustHave = null;
 		try {
 			strHead = txnProperties.getProperty(Constant.RspBody + ".Head");
+			headMustHave = txnProperties.getProperty(Constant.RspBody + ".Head.MustHave" );
 		} catch (Exception e) {
-			logger.debug(txnName + "流水号" + serialNo + "获取 " + Constant.RspBody  + ".Head 配置出错");
+			logger.debug(txnName + "获取 " + Constant.RspBody  + ".Head 配置出错");
 			return null;
 		}
 		
-		logger.debug(txnName + "流水号" + serialNo + "获取 Head 配置完成");
+		logger.debug(txnName + "获取 Head 配置完成");
 					
 		if (strHead == null || "".equals(strHead)) {
 			logger.warn(Constant.RspBody + ".Head 为空或未配置 ");
@@ -244,9 +256,13 @@ public class EsbPackService extends AbstractService {
 					columnName = columnName.trim();
 					//获取数据中的字段名 
 					Object value = resultHead.get(columnName);
+					// 如果交易配置中指定必须出现 Head 的 标签
+					if(headMustHave != null && "true".equals(headMustHave)) {
+						value = (value != null) ? value : "";
+					}
 					bodyHead.put(columnStr, value);  
 				} catch (Exception e) {
-					logger.error("流水号" + serialNo + "组返回数据包出现异常,异常位置:数据表头" + columnStr + "字段:", e);
+					logger.error("组返回数据包出现异常,异常位置:数据表头" + columnStr + "字段:", e);
 					throw e;
 				}
 			}
@@ -255,10 +271,12 @@ public class EsbPackService extends AbstractService {
 		
 		// 取 ARRAR , Array数据是重复多次的数据
 		String strArray = null;
+		String arrayLabelMustHave = null ;
 		try {
 			strArray = txnProperties.getProperty(Constant.RspBody + ".Array");
+			arrayLabelMustHave = txnProperties.getProperty(Constant.RspBody + ".Array.MustHave");
 		} catch (Exception e) {
-			logger.debug(txnName + "流水号" + serialNo + "获取 " + Constant.RspBody  + ".Array 配置出错");
+			logger.debug(txnName + "获取 " + Constant.RspBody  + ".Array 配置出错");
 			return null;
 		}
 					
@@ -266,38 +284,42 @@ public class EsbPackService extends AbstractService {
 			logger.warn(Constant.RspBody + ".Array 为空或未配置 ");
 		} else {
 			outColumes = strArray.split(",");
-			int i = 0; //计数器, 记录 本次返回数据条数
+			int i = 0; // 计数器, 记录 本次返回数据条数
 			Map<String, Object> tempOneArray = null;
-			for (DbDataLine onelint : resultList) {
-				tempOneArray = new HashMap<String, Object>();
-				i ++ ; 
-				// 获取输出参数
-				String value = null;
-				for (String columnStr : outColumes) {
-					
-					// 查找对应关系配置, 取 columnStr 在 QueryMessager中名称
-					// 如果没有配置, 视为 QueryMessager中名称 与 RspBody.Array 中配置的字段同名
-					String columnName = txnProperties.getProperty(txnCfgColumnPre + columnStr);
-					if(columnName == null || "".equals(columnName)){
-						columnName = columnStr;
+			if (resultList.size() != 0) {
+				for (DbDataLine onelint : resultList) {
+					tempOneArray = new HashMap<String, Object>();
+					i++;
+					// 获取输出参数
+					String value = null;
+					for (String columnStr : outColumes) {
+
+						// 查找对应关系配置, 取 columnStr 在 QueryMessager中名称
+						// 如果没有配置, 视为 QueryMessager中名称 与 RspBody.Array 中配置的字段同名
+						String columnName = txnProperties.getProperty(txnCfgColumnPre + columnStr);
+						if (columnName == null || "".equals(columnName)) {
+							columnName = columnStr;
+						}
+						columnName = columnName.trim();
+						// 根据名称取到返回结果中的数据
+						Object dataObj = onelint.get(columnName);
+						if (dataObj != null) {
+							value = dataObj.toString();
+						} else {
+							value = "";
+						}
+						tempOneArray.put(columnStr, value);
 					}
-					columnName = columnName.trim();
-					// 根据名称取到返回结果中的数据
-					Object dataObj = onelint.get(columnName);
-					if(dataObj != null){
-						value = dataObj.toString();
-					} else {
-						value = "";
-					}
-					tempOneArray.put(columnStr, value);
-					
-					logger.debug("流水号" + serialNo + ":" + columnStr + "增加到 DataLine 完成" + value);
+					bodyArray.add(tempOneArray);
+					logger.debug("RspBody中Array第[" + i + "]条数据组包完毕");
 				}
-				logger.debug("流水号" + serialNo + "RspBody中Array[" + i + "]组包完毕" );
-				bodyArray.add(tempOneArray);
+			} else if (arrayLabelMustHave != null || "true".equals(arrayLabelMustHave)) {
+				// 如果交易配置中指定必须出现 Array 标签
+				bodyArray.add(new HashMap<String, Object>());
 			}
+			logger.info("流水号" + serialNo + "  中Array组包完毕, 共[" + bodyArray.size() + "]条数据");
 		}
-		logger.debug("流水号" + serialNo + " RspBody组包完毕");
+		logger.info("流水号" + serialNo + " RspBody组包完毕");
 		
 		//// 根据交易代号查询 body 实现类   
 		String rspBodyClassName = (String) txnProperties.getProperty(RspBodyClass);
@@ -309,11 +331,10 @@ public class EsbPackService extends AbstractService {
 			logger.error(rspBodyClassName + "获取交易Body对象时出现异常", e);
 			return instance;
 		}
-		logger.info(txnName + "流水号" + serialNo + "实例化 交易对应的Body类完成");
+		logger.info(txnName + "实例化 交易对应的Body类完成");
 		
 		// 根据配置 初始化 body 
 		instance.init(bodyHead, bodyArray); 
-		
 		return instance;
 		
 	}
@@ -327,7 +348,7 @@ public class EsbPackService extends AbstractService {
 			StringWriter xmlStringWriter = new StringWriter();
 			marshaller = jc.createMarshaller();
 			marshaller.marshal(ob, xmlStringWriter);
-			logger.info(serialNo + " " + ob.getClass() + "组包后的返回数据为:" + xmlStringWriter.toString());
+			logger.info(ob.getClass() + "组包后的返回数据为:\n" + xmlStringWriter.toString());
 		} catch (JAXBException e) {
 			logger.error(serialNo + "记录" + ob.getClass() + "到日志时出错", e);
 		}

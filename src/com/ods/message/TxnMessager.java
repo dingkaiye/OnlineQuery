@@ -16,15 +16,17 @@ public class TxnMessager {
 	
 	private String serialNo = null ;  // 系统流水号
 	
-	private EsbMessageIn messageIn = null;  //接收到的报文
-	private EsbMessageOut messageOut = null; //返回报文
+//	private StringBuffer xmlStrBuf = null;   // 报文内容
 	
-	private String TxnId = null;        // 请求方请求调用的交易代号
-	private boolean msgStatus = true ;  //消息是否有效
-	private Object  headlerThread = null;      //处理本交易的 HeadlerThread 
+	private EsbMessageIn  messageIn = null;  // 接收到的报文
+	private EsbMessageOut messageOut = null; // 返回报文
+	
+	private String  TxnId = null;          // 请求方请求调用的交易代号
+	private boolean msgStatus = true ;     // 消息是否有效
+	private Object  headlerThread = null;  // 处理本交易的 HeadlerThread 
 	
 	
-	private Map<String, Object> inParm = null;        //入参
+	private Map<String, Object> inParm = null;          //入参
 	private Map<String, Object> resultHead = null;      //数据库查询结果,表头数据
 	private ArrayList<DbDataLine> resultList = null;    //数据库查询结果的数据
 	private String returnCode = null;  // 返回码
@@ -237,7 +239,18 @@ public class TxnMessager {
 	public void setHeadlerThread(Object headlerThread) {
 		this.headlerThread = headlerThread;
 	}
-	
+
+
+//	public StringBuffer getXmlStrBuf() {
+//		return xmlStrBuf;
+//	}
+//
+//
+//	public void setXmlStrBuf(StringBuffer xmlStrBuf) {
+//		this.xmlStrBuf = xmlStrBuf;
+//	}
+
+
 	
 	
 }

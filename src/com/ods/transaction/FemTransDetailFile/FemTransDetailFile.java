@@ -19,7 +19,7 @@ import com.ods.manager.TxnConfigManager;
 import com.ods.message.QueryMessager;
 import com.ods.message.QueryResult;
 import com.ods.transaction.ITransaction;
-import com.ods.ws.TxnBody;
+import com.ods.transaction.TxnBody;
 
 public class FemTransDetailFile  implements ITransaction {
 
@@ -169,13 +169,14 @@ public class FemTransDetailFile  implements ITransaction {
 			String splitStr = "|+|" ;
 			// 写出文件头数据
 			writer.write("起始时间|+|截止时间|+|币种|+|借贷标志\n");
-			DbDataLine dbDataLine = resultList.get(1);
-
+			DbDataLine dbDataLine = null ;
+			
 			sbfHead.append(StartDt).append(splitStr);
 			sbfHead.append(EndDt).append(splitStr);
 			sbfHead.append(StartDt).append(splitStr);
 
 			if (resultList != null && resultList.size() != 0) {
+				dbDataLine = resultList.get(1);
 				sbfHead.append(dbDataLine.get("Ccy")).append(splitStr);
 				sbfHead.append(dbDataLine.get("DbAndCr")).append(splitStr);
 			}else {
@@ -213,11 +214,12 @@ public class FemTransDetailFile  implements ITransaction {
 			logger.error("流水号" + SerialNo +"生成文件时出错" + fileFullName , e);
 			throw new TxnException ("流水号" + SerialNo +"生成文件时出错" + e.getMessage()) ;
 		}
-		logger.info("流水号" + SerialNo +"生成文件完成" + fileFullName);
+		logger.info("流水号" + SerialNo + "生成文件完成" + fileFullName);
 		// 发送文件到 文件交换平台 
 		
 		try {
-			FilePutWorker.putSignalFile(localPath, remotePath, fileName);
+			FilePutWorker filePetWorker = new FilePutWorker();
+			filePetWorker.putSignalFile(localPath, remotePath, fileName);
 		} catch (FtpException e) {
 			logger.error("流水号" + SerialNo +"传送文件到ESB出错" + fileFullName , e);
 			throw new TxnException ("流水号" + SerialNo +"传送文件到ESB出错" + e.getMessage()) ;

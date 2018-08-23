@@ -1,5 +1,6 @@
 @XmlSchema( 
    xmlns={  
+		   @XmlNs(prefix="soap", namespaceURI = NameSpace.SOAP_URL),
 		   @XmlNs(prefix="s", namespaceURI = NameSpace.ODS_URL) ,
 	       @XmlNs(prefix="tns", namespaceURI = NameSpace.ODS_WSDL ) 
    }  

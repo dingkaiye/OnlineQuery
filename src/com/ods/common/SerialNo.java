@@ -9,12 +9,13 @@ public class SerialNo {
 	private static long serialNo = 0;
 	
 	//private static Logger thisLogger = LogManager.getLogger("SysLog");  
-	private static SimpleDateFormat dfTime = new SimpleDateFormat("yyyyMMddHHmmss");//设置日期格式
+	//private static SimpleDateFormat dfTime = new SimpleDateFormat("yyyyMMddHHmmss");//设置日期格式
+	private static SimpleDateFormat dfTime = new SimpleDateFormat("yyMMddHHmmss");//设置日期格式
 	//private static SimpleDateFormat dfTime = new SimpleDateFormat("yyyyMMdd"); //设置日期格式
 	private static String currentDate = dfTime.format(new Date()).substring(0, 8); 
 	
-	private static DecimalFormat decimalFormat = new DecimalFormat("0000"); 
-	private static String currentSerialNo = dfTime.format(new Date()) + "0000"; //初始流水
+	private static DecimalFormat decimalFormat = new DecimalFormat("000000"); 
+	private static String currentSerialNo = dfTime.format(new Date()) + "000000"; //初始流水
 
 	private static final String odsSysCode = "0094";  //ODS系统代号
 	private static final int maxSerialNo = 9999 ;

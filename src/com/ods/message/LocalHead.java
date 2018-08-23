@@ -11,9 +11,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 
 @XmlRootElement(name = "LocalHead", namespace = NameSpace.ODS_URL)
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "localHead", propOrder = {
-    "IcSrNo"
-})
+@XmlType(name = "localHead", propOrder = {"IcSrNo"})
 public class LocalHead {
 	
 	@XmlElement(name="IcSrNo", namespace = NameSpace.ODS_URL )

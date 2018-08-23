@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -30,7 +31,8 @@ public class DbQuery {
 	 * 使用匿名参数查询数据库,若没有参数, params 赋值 null 
 	 */
 	public static QueryResult excuteQuery(String sql) throws SQLException {
-		return  excuteQuery(sql, null);
+		List parm = null ;
+		return  excuteQuery(sql, parm);
 	}
 	
 	/**
@@ -41,7 +43,7 @@ public class DbQuery {
 	 * @return ArrayList 本次查询数据的记录
 	 * @throws SQLException
 	 */
-	public static QueryResult excuteQuery(String sql, Object[] params) throws SQLException  {
+	public static QueryResult excuteQuery(String sql, List<Object> params) throws SQLException  {
 		
 		ResultSet queryResult = null; 
 		PreparedStatement queryStatement = null;
@@ -49,23 +51,24 @@ public class DbQuery {
 		int totleRows = 0;
 		
 		if (logger.isInfoEnabled()) {
-			logger.info("查询开始,SQL[" + sql + "] 入参[" + params + "] " );
+			logger.info( "查询开始,SQL[" + sql + "] 入参[" + params + "] " );
 			for(Object ob : params) {
 				logger.info(" 入参[" + ob.toString() + "]");
 			}
 		}
 		
-		conn = DbPool.getConnection();		//获取数据库连接
-		queryStatement = conn.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-		
-		if (params != null) {
-			for (int i = 0; i < params.length; i++) {
-				queryStatement.setObject(i + 1, params[i]);
-			}
-		}
-		
 		ArrayList<DbDataLine> resultList = new ArrayList<DbDataLine>();
 		try {
+			conn = DbPool.getConnection(); // 获取数据库连接
+			queryStatement = conn.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+
+			if (params != null) {
+				for (int i = 0; i < params.size(); i++) {
+					Object ob = params.get(i);
+					queryStatement.setObject(i + 1, ob);
+				}
+			}
+		
 			queryResult = queryStatement.executeQuery();
 			queryResult.last();
 			totleRows = queryResult.getRow();
@@ -89,6 +92,16 @@ public class DbQuery {
 		}
 		return new QueryResult(resultList, totleRows);
 	}
+	
+	public static QueryResult excuteQuery(String sql, Object[] params) throws SQLException {
+		QueryResult queryResult = null ; 
+		List<Object> listParams = new ArrayList<Object>();
+		for ( Object ob : params) {
+			listParams.add(ob);
+		}
+		queryResult = excuteQuery(sql,  listParams);
+		return queryResult;
+	}
 
 	/**
 	 * 根据开始行和结束行数实现查询
@@ -99,8 +112,7 @@ public class DbQuery {
 	 * @return
 	 * @throws Exception
 	 */
-	public static QueryResult excuteQuery(String sql, Object[] params, int startKey, int pageSize) throws SQLException {
-//		public static ArrayList<DbDataLine> excuteQuery(String sql, Object[] params, long startKey, long endKey ) throws Exception {
+	public static QueryResult excuteQuery(String sql, List<Object> params, int startKey, int pageSize) throws SQLException {
 		if (logger.isInfoEnabled()) {
 			logger.info("查询开始,SQL[" + sql + "] startKey[" + startKey + "] pageSize[" + pageSize + "]" );
 			for(Object ob : params) {
@@ -112,18 +124,19 @@ public class DbQuery {
 		Connection conn = null;
 		int totleRows = 0;
 		int endKey = startKey + pageSize ;
-		 
-		conn = DbPool.getConnection();		//获取数据库连接
-		queryStatement = conn.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-		
-		if (params != null) {
-			for (int i = 0; i < params.length; i++) {
-				queryStatement.setObject(i + 1, params[i]);
-			}
-		}
-		
 		ArrayList<DbDataLine> resultList = new ArrayList<DbDataLine>();
+		 
 		try {
+			conn = DbPool.getConnection(); // 获取数据库连接
+			queryStatement = conn.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+
+			if (params != null) {
+				for (int i = 0; i < params.size(); i++) {
+					Object ob = params.get(i);
+					queryStatement.setObject(i + 1, ob);
+				}
+			}
+		
 			queryResult = queryStatement.executeQuery();
 			
 			queryResult.last();
@@ -154,6 +167,16 @@ public class DbQuery {
 			logger.info("查询完成,SQL[" + sql + "] startKey[" + startKey + "] endKey[" + endKey + "] pageSize[" + pageSize + "]");
 		}
 		return new QueryResult(resultList, totleRows);
+	}
+	
+	public static QueryResult excuteQuery(String sql, Object[] params, int startKey, int pageSize) throws SQLException {
+		QueryResult queryResult = null ; 
+		List<Object> listParams = new ArrayList<Object>();
+		for ( Object ob : params) {
+			listParams.add(ob);
+		}
+		queryResult = excuteQuery(sql,  listParams, startKey, pageSize);
+		return queryResult;
 	}
 	
 	

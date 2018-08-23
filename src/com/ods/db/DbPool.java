@@ -39,13 +39,14 @@ public class DbPool {
 		DruidPooledConnection connnection = null;
 		try {
 			connnection = dataSource.getConnection();
+			if( connnection != null ) {
+				logger.info("测试获取数据库连接 成功");
+			}
 		} catch (SQLException e) {
 			logger.error("测试获取数据库连接 失败, 新查询时将重试", e);
+		} finally {
+			closeConnection(connnection);
 		}
-		if( connnection != null) {
-			logger.info("测试获取数据库连接 成功");
-		}
-		closeConnection(connnection);
 	}
 	
 	/**
@@ -85,7 +86,23 @@ public class DbPool {
 	private static DruidDataSource getDataSource() throws Exception {
 		DruidDataSource druidDataSource = null;
 		Properties properties = Config.loadConfigPropertiesFile("druid.properties");
-		//properties.put("password", "odss");
+		if (properties != null) {
+			String decrypt = properties.getProperty("decrypt");
+			if (decrypt == null || !"false".equals(decrypt)) {
+				String decryptPassword = null;
+				String passWord = properties.getProperty("password");
+				try {
+					Properties sysProperties = Config.loadConfigPropertiesFile("SysConfig.properties");
+					String publicKey = sysProperties.getProperty("publicKey");
+					decryptPassword = com.ods.tools.RsaTools.decrypt(publicKey, passWord);
+					logger.info("解密 数据库密码 [" + passWord + "] 完成 ");
+				} catch (Exception e) {
+					logger.error("解密 数据库密码 [" + passWord + "] 失败");
+					throw e;
+				}
+				properties.put("password", decryptPassword);
+			}
+		}
 		druidDataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(properties);
 		logger.info("数据库连接池建立完毕");
 		return druidDataSource; 

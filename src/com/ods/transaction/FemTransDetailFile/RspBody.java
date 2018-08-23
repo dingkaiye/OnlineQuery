@@ -8,7 +8,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 
 import com.ods.common.NameSpace;
-import com.ods.ws.TxnBody;
+import com.ods.transaction.TxnBody;
 
 @XmlRootElement(name = "Body", namespace = NameSpace.ODS_URL)
 @XmlType(name="FemTransDetailFileRspBody", namespace=NameSpace.ODS_URL, propOrder = { "TotlNm", "RtrnNm", "Acct","AcctOfNm","DocTp", "CrtfctNo", "StrDt", "EndDt", "QuerySessionID"}) 

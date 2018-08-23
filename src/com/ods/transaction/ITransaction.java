@@ -3,8 +3,12 @@ package com.ods.transaction;
 import java.sql.SQLException;
 import com.ods.exception.TxnException;
 import com.ods.message.QueryMessager;
-import com.ods.ws.TxnBody;
 
+/**
+ * 所有的交易需要实现此接口
+ * @author dingkaiye
+ *
+ */
 public interface ITransaction {
 	/**
 	 * @author ding_kaiye

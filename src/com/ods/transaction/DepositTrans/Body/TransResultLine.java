@@ -4,10 +4,11 @@ package com.ods.transaction.DepositTrans.Body;
 import java.util.Map;
 
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 
 import com.ods.common.NameSpace;
 
-//@XmlRootElement(namespace = NameSpace.ODS_URL)
+@XmlRootElement(name = "TransResultLine", namespace = NameSpace.ODS_URL)
 public class TransResultLine {
 	
 		@XmlElement(namespace = NameSpace.ODS_URL )

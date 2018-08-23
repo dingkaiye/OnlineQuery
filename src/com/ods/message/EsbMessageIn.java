@@ -4,7 +4,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.ods.common.NameSpace;
-import com.ods.ws.TxnBody;
+import com.ods.transaction.TxnBody;
 
 @XmlRootElement(name = "EsbMessage", namespace=NameSpace.ODS_URL)
 public class EsbMessageIn extends EsbMessage {

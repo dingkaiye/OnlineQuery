@@ -9,7 +9,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 
 import com.ods.common.NameSpace;
-import com.ods.ws.TxnBody;
+import com.ods.transaction.TxnBody;
 
 @XmlRootElement(name = "Body", namespace = NameSpace.ODS_URL)
 @XmlType(name="DepositTransRspBody", namespace=NameSpace.ODS_URL, propOrder = { "TotlNm", "RtrnNm", "Acct","AcctOfNm","DocTp", "CrtfctNo", "StrDt", "EndDt", "QuerySessionID", "TxnRsltAry"}) 
@@ -51,10 +51,10 @@ public class RspBody implements TxnBody {
 		this.QuerySessionID = (String) Map.get("QuerySessionID");
 		
 		TxnRsltAry = new ArrayList<TransResultLine>();
-//		for (Map<String, Object> ob: List ){
-//			TransResultLine tr = new TransResultLine(ob);
-//			TxnRsltAry.add(tr);
-//		}
+		for (Map<String, Object> ob: List ){
+			TransResultLine tr = new TransResultLine(ob);
+			TxnRsltAry.add(tr);
+		}
 	}
 	
 	

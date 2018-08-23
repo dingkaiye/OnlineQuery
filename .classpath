@@ -17,17 +17,17 @@
 	<classpathentry exported="true" kind="lib" path="lib/cxf/commons-lang3-3.6.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/commons-text-1.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cryptacular-1.1.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-core-3.2.1.jar" sourcepath="C:/Users/DINGKA~1/AppData/Local/Temp/.org.sf.feeling.decompiler1528371885988/source/cxf-core-3.2.1-sources.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-core-3.2.1.jar" sourcepath="C:/Users/DINGKA~1/AppData/Local/Temp/.org.sf.feeling.decompiler1533515790897/source/cxf-core-3.2.1-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-manifest.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-bindings-coloc-3.2.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-bindings-corba-3.2.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-bindings-soap-3.2.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-bindings-soap-3.2.1.jar" sourcepath="C:/Users/DING_K~1/AppData/Local/Temp/.org.sf.feeling.decompiler1533538905187/source/cxf-rt-bindings-soap-3.2.1-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-bindings-xml-3.2.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-databinding-aegis-3.2.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-databinding-jaxb-3.2.1.jar" sourcepath="C:/Users/DING_K~1/AppData/Local/Temp/.org.sf.feeling.decompiler1528418622265/source/cxf-rt-databinding-jaxb-3.2.1-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-features-clustering-3.2.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-frontend-jaxrs-3.2.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-frontend-jaxws-3.2.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-frontend-jaxrs-3.2.1.jar" sourcepath="C:/Users/DINGKA~1/AppData/Local/Temp/.org.sf.feeling.decompiler1533515790897/source/cxf-rt-frontend-jaxrs-3.2.1-sources.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-frontend-jaxws-3.2.1.jar" sourcepath="C:/Users/DING_K~1/AppData/Local/Temp/.org.sf.feeling.decompiler1533286310690/source/cxf-rt-frontend-jaxws-3.2.1-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-frontend-js-3.2.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-frontend-simple-3.2.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-javascript-3.2.1.jar"/>
@@ -47,7 +47,7 @@
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-rs-sse-3.2.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-security-3.2.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-security-saml-3.2.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-transports-http-3.2.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-transports-http-3.2.1.jar" sourcepath="C:/Users/DING_K~1/AppData/Local/Temp/.org.sf.feeling.decompiler1533538905187/source/cxf-rt-transports-http-3.2.1-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-transports-http-hc-3.2.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-transports-http-jetty-3.2.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/cxf-rt-transports-http-netty-client-3.2.1.jar"/>
@@ -150,11 +150,12 @@
 	<classpathentry exported="true" kind="lib" path="lib/cxf/xmlbeans-2.6.0.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/xmlschema-core-2.2.2.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/cxf/xmlsec-2.1.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/druid-1.1.5.jar" sourcepath="C:/Users/DINGKA~1/AppData/Local/Temp/.org.sf.feeling.decompiler1531894685639/source/druid-1.1.5-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/log4j-1.2.17.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/ojdbc6.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/ESBFileAPI.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/commons-logging-1.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/druid-1.1.10.jar" sourcepath="lib/druid-1.1.10-sources.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/GTPFileAPI.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/druid-1.1.10-sources.jar"/>
 	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

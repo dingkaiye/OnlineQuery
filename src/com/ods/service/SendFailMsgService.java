@@ -3,8 +3,6 @@ package com.ods.service;
 import java.io.IOException;
 import java.util.Properties;
 import org.apache.log4j.Logger;
-//import com.ods.common.Config;
-import com.ods.common.Constant;
 import com.ods.log.OdsLog;
 import com.ods.manager.QueueManager;
 import com.ods.message.EsbMessageIn;
@@ -56,11 +54,19 @@ public class SendFailMsgService extends AbstractService {
 
 	@Override
 	public void run() {
+		
+		final Thread service = Thread.currentThread() ; // 当前线程
+		final String serviceName = service.getName();   // 当前线程名
 		String SerialNo = null;
 		String txnName = null ;
 		TxnMessager txnMessager = null;
 	
 		while (true) {
+			try {
+				service.setName( serviceName );
+			} catch (Exception e) {
+				logger.error("Thread Set Name Catch Excrption" + e, e);
+			}
 			try { //服务不退出
 				try { // 从队列中获取 txnMessager
 					txnMessager = QueueManager.SysQueuePoll(inQueue);
@@ -71,6 +77,7 @@ public class SendFailMsgService extends AbstractService {
 					} catch (InterruptedException e1) {
 						logger.warn("Thread.sleep InterruptedException");
 					}
+					continue ;
 				}
 
 				if (null != txnMessager) {
@@ -81,7 +88,7 @@ public class SendFailMsgService extends AbstractService {
 						continue;
 					}
 					try {
-						// 取得通讯方式 同步, 异步
+						service.setName( serviceName + ":" + SerialNo);
 						// 组失败报文 
 						EsbMessageIn esbMessage = null;
 						EsbMessage reqMessage = txnMessager.getMessageIn(); 
@@ -120,10 +127,10 @@ public class SendFailMsgService extends AbstractService {
 
 			} catch (Exception e) {
 				try {
-					logger.error("交易处理出现异常[" + SerialNo + "]" + e.getMessage());
+					logger.error("交易处理出现异常[" + SerialNo + "]" + e.getMessage(), e);
 					QueueManager.moveToFailQueue(txnMessager, failQueue, "系统错误, 请稍候重试" + e.getMessage());
 				} catch (Exception newE) {
-					newE.printStackTrace();
+					logger.error("New Exception" + newE, newE);
 				}
 				continue ;
 			}

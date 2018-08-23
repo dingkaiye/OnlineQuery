@@ -1,6 +1,7 @@
 package com.ods.manager;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -22,6 +23,9 @@ import com.ods.ws.ArtifactOutInterceptor;
 import com.ods.ws.ESBWaiter;
 
 import org.apache.cxf.interceptor.Interceptor;
+import org.apache.cxf.interceptor.LoggingInInterceptor;
+import org.apache.cxf.interceptor.LoggingOutInterceptor;
+import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
 import org.apache.cxf.message.Message;
 
 
@@ -71,7 +75,8 @@ public class InitSystem {
 			String nextQueueName = null ; 
 			String failQueueName = null ; 
 			AbstractService service = null ;
-			String thredName = null; // 线程名
+			String thredNameList = null; // 线程名列表
+			List<Thread> monitorthreadList = new ArrayList<Thread>() ;  // 监控线程列表 
 			
 			String[] serviceNames = servicesList.split(","); // 按照 "," 分割参数
 			for(String serviceName: serviceNames) {
@@ -112,7 +117,8 @@ public class InitSystem {
 				
 				//  按照线程数 实例化服务 
 				service = null;
-				thredName = "";
+				List<Thread> threadList = new ArrayList<Thread>() ; 
+				thredNameList = "";
 				for(int i=0; i<threadCnt; i++) {
 					try {
 						service = (AbstractService) Class.forName(className).newInstance();
@@ -122,95 +128,28 @@ public class InitSystem {
 					}
 					
 					service.setName( serviceName + "-" + i);
-					thredName = thredName + " " + service.getName();
+					thredNameList = thredNameList + " " + service.getName();
 					
 					try {
 						service.ServiceInit(inQueueName, nextQueueName, failQueueName) ;  //  初始化服务 
+						// 注册服务
+						threadList.add(service);
 						service.start(); // 启动 线程 
 					} catch (Exception e) {
 						logger.error("初始化服务" + serviceName +":" + service.getName() + "出现异常", e);
 						throw new TxnException ("初始化服务" + serviceName +":" + service.getName() + "出现异常" );
 					}
 				}
-				logger.info(serviceName + " 启动成功, 启动线程数:" + threadCnt + " 线程名: " + thredName);
+				logger.info(serviceName + " 启动成功, 启动线程数:" + threadCnt + " 线程名: " + thredNameList);
+				// 启动监控线程   ArrayList, 维护数量,  service.currentThread(), 
+				ServiceMonitor serviceMonitor = new ServiceMonitor (threadList, threadCnt, serviceName, className, inQueueName, nextQueueName, failQueueName) ;
+				serviceMonitor.setName( serviceName + "Monitor-" + serviceMonitor.getId() );
+				monitorthreadList.add(serviceMonitor);
+				serviceMonitor.start();
 			}
 			
 			
-/*	20180607 delete 增强配置文件的作用, 降低系统耦合程度 		
-			// 读取服务线程数配置
-//			String UnPackService = SysConfig.getProperty("UnPackService");
-			String TxnService = SysConfig.getProperty("TxnService");
-			String EsbPackService = SysConfig.getProperty("EsbPackService");
-			String SendSuccMsgService = SysConfig.getProperty("SendSuccMsgService");
-			String SendFailMsgService = SysConfig.getProperty("SendFailMsgService");
-
-			// 检查服务线程数配置
-//			if ("".equals(UnPackService) || UnPackService == null) {
-//				logger.error("UnPackService 配置为空或未配置, 系统初始化失败");
-//				throw new TxnException("UnPackService 配置为空或未配置, 系统初始化失败");
-//			}
-			if ("".equals(TxnService) || TxnService == null) {
-				logger.error("TxnService 配置为空或未配置, 系统初始化失败");
-				throw new TxnException("TxnService 配置为空或未配置, 系统初始化失败");
-			}
-			if ("".equals(EsbPackService) || EsbPackService == null) {
-				logger.error("EsbPackService 配置为空或未配置, 系统初始化失败");
-				throw new TxnException("EsbPackService 配置为空或未配置, 系统初始化失败");
-			}
-			if ("".equals(SendSuccMsgService) || SendSuccMsgService == null) {
-				logger.error("SendSuccMsgService 配置为空或未配置, 系统初始化失败");
-				throw new TxnException("SendSuccMsgService 配置为空或未配置, 系统初始化失败");
-			}
-			if ("".equals(SendFailMsgService) || SendFailMsgService == null) {
-				logger.error("SendFailMsgService 配置为空或未配置, 系统初始化失败");
-				throw new TxnException("SendFailMsgService 配置为空或未配置, 系统初始化失败");
-			}
-
-			// 实例化服务线程
-
-			int threadcnt = 0;
-			String thredName = null;
-
-			threadcnt = new Integer(TxnService);
-			thredName = "";
-			for (int i = 0; i < threadcnt; i++) {
-				TxnService service = new TxnService(Constant.TxnQueue, Constant.PackQueue);
-				service.setName("TxnService-" + i);
-				service.start();
-				thredName = thredName + " " + service.getName();
-			}
-			logger.info("TxnService 启动成功, 启动线程数:" + threadcnt + " 线程名 " + thredName);
-
-			threadcnt = new Integer(EsbPackService);
-			thredName = "";
-			for (int i = 0; i < threadcnt; i++) {
-				EsbPackService service = new EsbPackService(Constant.PackQueue, Constant.SuccessQueue);
-				service.setName("EsbPackService-" + i);
-				service.start();
-				thredName = thredName + " " + service.getName();
-			}
-			logger.info("EsbPackService 启动成功, 启动线程数:" + threadcnt + " 线程名 " + thredName);
-
-			threadcnt = new Integer(SendSuccMsgService);
-			thredName = "";
-			for (int i = 0; i < threadcnt; i++) {
-				SendSuccMsgService service = new SendSuccMsgService(Constant.SuccessQueue, null);
-				service.setName("SendSuccMsgService-" + i);
-				service.start();
-				thredName = thredName + " " + service.getName();
-			}
-			logger.info("SendSuccMsgService 启动成功, 启动线程数:" + threadcnt + " 线程名: " + thredName);
-
-			threadcnt = new Integer(SendFailMsgService);
-			thredName = "";
-			for (int i = 0; i < threadcnt; i++) {
-				SendFailMsgService service = new SendFailMsgService(Constant.FailQueue, null);
-				service.setName("SendFailMsgService-" + i);
-				service.start();
-				thredName = thredName + " " + service.getName();
-			}
-			logger.info("SendFailMsgService 启动成功, 启动线程数:" + threadcnt + " 线程名 " + thredName);
- */
+/*	20180607 增强配置文件的作用, 降低系统耦合程度 	 */
 
 			String wsUrl = SysConfig.getProperty("WebServiceUrl");
 			if ("".equals(wsUrl) || wsUrl == null) {
@@ -218,20 +157,16 @@ public class InitSystem {
 				throw new TxnException("WebServiceUrl 配置为空或未配置, 系统初始化失败");
 			}
 			
-			
 			// 发布webservice
 			try {
+				ESBWaiter waiter = new ESBWaiter();
 				ArtifactInInterceptor artifactInInterceptor = new ArtifactInInterceptor();
 				ArtifactOutInterceptor artifactOutInterceptor = new ArtifactOutInterceptor();
-				ESBWaiter waiter = new ESBWaiter();
 				
 				EndpointImpl endpointImpl = (EndpointImpl) Endpoint.publish(wsUrl, waiter); 
 				//添加拦截器 
 				endpointImpl.getInInterceptors().add(artifactInInterceptor);
-				
-				List<Interceptor<? extends Message>> inInterceptors =  endpointImpl.getOutInterceptors();
-				inInterceptors.add(artifactOutInterceptor) ;
-				//System.out.println(endpointImpl);
+				endpointImpl.getOutInterceptors().add(artifactOutInterceptor);
 				
 				logger.info("WebService发布完成, 地址:" + wsUrl);
 			} catch (Exception e) {

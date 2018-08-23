@@ -55,6 +55,9 @@ public  class  SysHeadIn {
 	@XmlElement(name="FileFlg", namespace = NameSpace.ODS_URL )
 	private String FileFlg        = null;  // 文件标志          
 	
+	@XmlElement(name="OdsAddNodeReqSoapStr", namespace = NameSpace.ODS_URL )
+	private String OdsAddNodeReqSoapStr     = null;  // Mac校验结果        
+	
 //	private String SvcId = null  ;  // 服务代码
 //	private String SvcScn         = null;  // 服务场景         
 //	private String SvcSplrTxnCd   = null;  // 服务提供方交易代码    
@@ -76,6 +79,12 @@ public  class  SysHeadIn {
 //	private String UsrLng         = null;  // 用户语言              
 //	private String FileFlg        = null;  // 文件标志          
 	
+	public String getOdsAddNodeReqSoapStr() {
+		return OdsAddNodeReqSoapStr;
+	}
+	public void setOdsAddNodeReqSoapStr(String odsAddNodeReqSoapStr) {
+		OdsAddNodeReqSoapStr = odsAddNodeReqSoapStr;
+	}
 	public String getSvcId() {
 		return SvcId;
 	}
@@ -196,6 +205,7 @@ public  class  SysHeadIn {
 	public void setFileFlg(String fileFlg) {
 		FileFlg = fileFlg;
 	}
+	
 	
 	
 
